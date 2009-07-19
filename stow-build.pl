@@ -4,54 +4,65 @@ use warnings;
 
 my $PREFIX="/opt";
 my $ACLOCAL="aclocal -I $PREFIX/share/aclocal";
+my $PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig";
 my $DIR='xorg.2009-07-18';
 my $DESTDIR="/stow/$DIR";
-my $PKG_CONFIG_PATH="/usr/lib/pkgconfig";
 my $MAKE = "make";
 my $INSTALL = "sudo make DESTDIR=$DESTDIR install";
 my $STOW = "sudo stow --verbose $DIR";
 my @MODULE_LIST = &return_module_list;
 
-&initialize;
-#&build_module( 'x11proto');
-#&build_module( 'proto' );
-#&build_module( 'libXau' );
-# &build_all_modules (@MODULE_LIST);
+# &initialize;
+# &build_module( 'x11proto');
+# &build_module( 'proto' );
+# build_module( 'libXau' );
+&build_all_modules (@MODULE_LIST);
 
 #&build_module( 'libxcb' );
-
 ####################### Subroutines only below this line #################################
 
 sub initialize {
+    my $script = <<"END";
+#!/bin/bash
+set -o verbose
+export ACLOCAL="$ACLOCAL"
+make clean
+./autogen.sh --prefix="$PREFIX"
+$MAKE
+$INSTALL
+$STOW
+END
     chdir "macros";
-    print "Building macros\n";
-    my $command = "./autogen.sh --prefix=$PREFIX";
-    system($command);
-    system($MAKE);
-    system($INSTALL);
-    system($STOW);
+    open (SCRIPT, ">stow.macros.sh");
+    print SCRIPT $script;
+    close SCRIPT;
+    chmod 0755, $script;
+    print "Initializing ...\n";
+    system("sh ./stow.macros.sh");
     chdir '..';
 }
 
 sub build_module {
     my $module = shift;
-    $ENV{ACLOCAL}="aclocal -I $PREFIX/share/aclocal";
-    $ENV{PKG_CONFIG_PATH}="$PREFIX/lib/pkgconfig";
     chdir $module;
-    print "------------------------------------------------------------------------------------\n";
-    print "Building module $module\n";
-    print "------------------------------------------------------------------------------------\n";
+    print "---------------------------------------------------\n";
+    print "         Building module $module                   \n";
+    print "---------------------------------------------------\n";
     my $script = <<"END";
-./autogen.sh --prefix=\"$PREFIX\""
+#!/bin/bash
+set -o verbose
+make clean
+export ACLOCAL="$ACLOCAL"
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH
+./autogen.sh --prefix=$PREFIX
 $MAKE
 $INSTALL
+$STOW
 END
-    open (SCRIPT, ">stow.module.sh");
+    open (SCRIPT, ">stow.$module.sh");
     print SCRIPT $script;
-    exit;
-    print "------------------------------------------------------------------------------------\n";
-    print "Stowing $module\n";
-    print "------------------------------------------------------------------------------------\n";
+    close SCRIPT;
+    system ( "sh ./stow.$module.sh");
     chdir "..";
 }
 
@@ -70,7 +81,7 @@ sub return_module_list {
     my @module_list = qw (
 fontsproto
 x11proto
-xextproto[B
+xextproto
 videoproto
 renderproto
 inputproto
@@ -79,7 +90,7 @@ xf86vidmodeproto
 xf86dgaproto
 xf86driproto
 xcmiscproto
-scrnsa[C[Cverproto
+scrnsaverproto
 bigreqsproto
 resourceproto
 compositeproto
