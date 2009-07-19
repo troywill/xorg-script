@@ -2,7 +2,8 @@
 use strict;
 use warnings;
 
-my $PREFIX="/usr/local";
+my $PREFIX="/opt";
+my $ACLOCAL="aclocal -I $PREFIX/share/aclocal";
 my $DIR='xorg.2009-07-18';
 my $DESTDIR="/stow/$DIR";
 my $PKG_CONFIG_PATH="/usr/lib/pkgconfig";
@@ -14,7 +15,7 @@ my @MODULE_LIST = &return_module_list;
 &initialize;
 #&build_module( 'x11proto');
 #&build_module( 'proto' );
-&build_module( 'libXau' );
+#&build_module( 'libXau' );
 # &build_all_modules (@MODULE_LIST);
 
 #&build_module( 'libxcb' );
@@ -40,14 +41,17 @@ sub build_module {
     print "------------------------------------------------------------------------------------\n";
     print "Building module $module\n";
     print "------------------------------------------------------------------------------------\n";
-
-    system("./autogen.sh --prefix=\"$PREFIX\"");
-    system("$MAKE");
-    system("$INSTALL");
+    my $script = <<"END";
+./autogen.sh --prefix=\"$PREFIX\""
+$MAKE
+$INSTALL
+END
+    open (SCRIPT, ">stow.module.sh");
+    print SCRIPT $script;
+    exit;
     print "------------------------------------------------------------------------------------\n";
     print "Stowing $module\n";
     print "------------------------------------------------------------------------------------\n";
-    system("$STOW");
     chdir "..";
 }
 
@@ -66,7 +70,7 @@ sub return_module_list {
     my @module_list = qw (
 fontsproto
 x11proto
-xextproto
+xextproto[B
 videoproto
 renderproto
 inputproto
@@ -75,7 +79,7 @@ xf86vidmodeproto
 xf86dgaproto
 xf86driproto
 xcmiscproto
-scrnsaverproto
+scrnsa[C[Cverproto
 bigreqsproto
 resourceproto
 compositeproto
