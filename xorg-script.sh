@@ -1,5 +1,13 @@
 PREFIX="/opt/gfx-test"
 PKG_CONFIG_PATH=/opt/gfx-test/lib/pkgconfig
+LOG_FILE="${HOME}/xorg.log"
+echo $LOG_FILE
+
+make_install_prompt ()
+{
+    echo -n "Press Enter to install $1 ..."
+    read -e COLOR
+}
 
 # Attempt to detect proper concurrency level
 CPU_CORES=`cat /proc/cpuinfo | grep -m1 "cpu cores" | sed s/".*: "//`
@@ -44,6 +52,7 @@ git://git.freedesktop.org/git/xorg/proto/glproto \
 git://git.freedesktop.org/git/xorg/lib/libpciaccess \
 git://git.freedesktop.org/git/pixman \
 git://git.freedesktop.org/git/xcb/proto \
+git://git.freedesktop.org/git/xorg/lib/libXau \
 git://git.freedesktop.org/git/xcb/pthread-stubs \
 git://git.freedesktop.org/git/xcb/libxcb \
 git://git.freedesktop.org/git/xorg/proto/randrproto \
@@ -77,6 +86,7 @@ fixesproto \
 libxtrans \
 proto \
 pthread-stubs \
+libXau \
 libxcb \
 libX11 \
 libXext \
@@ -127,6 +137,7 @@ build ()
                 cd $i
                 echo ======================
                 echo configuring $i
+		echo "configuring $i" `date` >> $LOG_FILE
                 echo ======================
                 ./autogen.sh --prefix="$PREFIX"
                 echo ======================
@@ -137,6 +148,7 @@ build ()
                         exit
                 fi
                 ($MAKE)
+		make_install_prompt $i
                 make install
                 cd ..
         done
