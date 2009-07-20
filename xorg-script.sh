@@ -1,3 +1,8 @@
+#!/bin/sh
+##################################################################
+#### TDW libXi
+##################################################################
+
 PREFIX="/opt/gfx-test"
 PKG_CONFIG_PATH=/opt/gfx-test/lib/pkgconfig
 LOG_FILE="${HOME}/xorg.log"
@@ -37,6 +42,7 @@ git://git.freedesktop.org/git/xorg/proto/evieproto \
 git://git.freedesktop.org/git/xorg/proto/kbproto \
 git://git.freedesktop.org/git/xorg/lib/libxtrans \
 git://git.freedesktop.org/git/xorg/lib/libX11 \
+git://git.freedesktop.org/git/xorg/lib/libXi \
 git://git.freedesktop.org/git/xorg/lib/libXext \
 git://git.freedesktop.org/git/xorg/lib/libxkbfile \
 git://git.freedesktop.org/git/xorg/lib/libfontenc \
@@ -89,6 +95,7 @@ pthread-stubs \
 libXau \
 libxcb \
 libX11 \
+libXi \
 libXext \
 libxkbfile \
 libfontenc \

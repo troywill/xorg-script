@@ -1,0 +1,52 @@
+# I, TDW, adapted this from http://www.x.org/wiki/Development/git on
+# July 20, 2009
+# module => GitHub repository
+
+xorg/util/macros
+mesa/drm
+mesa/mesa
+xorg/xserver
+xorg/driver/xf86-input-mouse
+xorg/driver/xf86-input-keyboard
+xorg/driver/xf86-video-inte
+
+fontsproto => 'xorg/proto/fontsproto'
+x11proto => 'xorg/proto/x11proto'
+xextproto => 'xorg/proto/xextproto'
+videoproto => 'xorg/proto/videoproto'
+renderproto => 'xorg/proto/renderproto'
+inputproto => 'xorg/proto/inputproto'
+damageproto => 'xorg/proto/damageproto'
+xf86vidmodeproto => 'xorg/proto/xf86vidmodeproto'
+xf86dgaproto => 'xorg/proto/xf86dgaproto'
+xf86driproto => 'xorg/proto/xf86driproto'
+xcmiscproto => 'xorg/proto/xcmiscproto'
+scrnsaverproto => 'xorg/proto/scrnsaverproto'
+bigreqsproto => 'xorg/proto/bigreqsproto'
+resourceproto => 'xorg/proto/resourceproto'
+compositeproto => 'xorg/proto/compositeproto'
+evieproto => 'xorg/proto/evieproto'
+kbproto => 'xorg/proto/kbproto'
+fixesproto => 'xorg/proto/fixesproto'
+libxtrans => 'xorg/lib/libxtrans'
+proto => 'xcb/proto'
+pthread-stubs => 'xcb/pthread-stubs'
+libXau => 'xorg/lib/libXau'
+libxcb => 'xcb/libxcb'
+libX11 => 'xorg/lib/libX11'
+libXi =>
+libXext => 'xorg/lib/libXext'
+libxkbfile => 'xorg/lib/libxkbfile'
+libfontenc => 'xorg/lib/libfontenc'
+libXfont => 'xorg/lib/libXfont'
+libXv => 'xorg/lib/libXv'
+libXvMC => 'xorg/lib/libXvMC'
+libXxf86vm => 'xorg/lib/libXxf86vm'
+libXinerama => 'xorg/lib/libXinerama'
+libXfixes => 'xorg/lib/libXfixes'
+libXdamage => 'xorg/lib/libXdamage'
+dri2proto => 'xorg/proto/dri2proto'
+glproto => 'xorg/proto/glproto'
+libpciaccess => 'xorg/lib/libpciaccess'
+pixman => 'pixman'
+randrproto => 'xorg/proto/randrproto'

@@ -5,7 +5,7 @@ use warnings;
 my $PREFIX="/opt";
 my $ACLOCAL="aclocal -I $PREFIX/share/aclocal";
 my $PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig";
-my $DIR='xorg.2009-07-18';
+my $DIR='xorg.2009-07-19';
 my $DESTDIR="/stow/$DIR";
 my $MAKE = "make";
 my $INSTALL = "sudo make DESTDIR=$DESTDIR install";
@@ -13,12 +13,8 @@ my $STOW = "sudo stow --verbose $DIR";
 my @MODULE_LIST = &return_module_list;
 
 # &initialize;
-# &build_module( 'x11proto');
-# &build_module( 'proto' );
-# build_module( 'libXau' );
 &build_all_modules (@MODULE_LIST);
 
-#&build_module( 'libxcb' );
 ####################### Subroutines only below this line #################################
 
 sub initialize {
@@ -55,14 +51,14 @@ make clean
 export ACLOCAL="$ACLOCAL"
 export PKG_CONFIG_PATH=$PKG_CONFIG_PATH
 ./autogen.sh --prefix=$PREFIX
-$MAKE
-$INSTALL
-$STOW
+# $MAKE
+# $INSTALL
+# $STOW
 END
     open (SCRIPT, ">stow.$module.sh");
     print SCRIPT $script;
     close SCRIPT;
-    system ( "sh ./stow.$module.sh");
+#    system ( "sh ./stow.$module.sh");
     chdir "..";
 }
 
@@ -104,6 +100,7 @@ pthread-stubs
 libXau
 libxcb
 libX11
+libXi
 libXext
 libxkbfile
 libfontenc
