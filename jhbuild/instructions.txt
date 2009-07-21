@@ -1,2 +1,6 @@
 git clone git://git.gnome.org/jhbuild
-echo 'export PATH=$PATH:~/.local/bin' >> .bashrc
+echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc
+git clone ...
+jhbuild xserver xf86-video-linux xf86-input-keyboard xf86-input-mouse > log.jhbuild 2>&1
+
+
