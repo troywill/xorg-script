@@ -1,1 +1,2 @@
 git clone git://git.gnome.org/jhbuild
+echo 'export PATH=$PATH:~/.local/bin' >> .bashrc
