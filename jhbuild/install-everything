@@ -19,12 +19,13 @@ sub menu {
     print "\t(Q) Quit\n";
     print "\t\t? ";
     chomp (my $choice = <STDIN>);
+    my $PROMPT = "\n\nPress any key to continue.";
     if ( $choice eq '1' ) {
-	&install_jhbuild; print "\n\nPress any key to continue."; my $input = <STDIN>;
+	&install_jhbuild; print $PROMPT; my $input = <STDIN>;
     } elsif ( $choice eq '2' ) {
-	&install_xorg_util_modular; print "\n\nPress any key to continue"; my $input = <STDIN>;
+	&install_xorg_util_modular; print $PROMPT; my $input = <STDIN>;
     } elsif ( $choice eq '3' ) {
-	&print_reference_commands; print "\n\nPress any key to continue 3"; my $input = <STDIN>;
+	&print_reference_commands; print $PROMPT; my $input = <STDIN>;
     } else {
 	exit;
     }
