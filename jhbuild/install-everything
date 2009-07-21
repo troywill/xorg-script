@@ -9,7 +9,7 @@ while (1) {
 
 sub print_reference_commands {
     print "jhbuild list xserver xf86-video-intel xf86-input-keyboard xf86-input-mouse\n";
-    print 'jhbuild xserver xf86-video-intel xf86-input-keyboard xf86-input-mouse > log.jhbuild 2>&1', "\n";
+    print 'jhbuild build xserver xf86-video-intel xf86-input-keyboard xf86-input-mouse > log.jhbuild 2>&1', "\n";
 }
 
 sub menu {
