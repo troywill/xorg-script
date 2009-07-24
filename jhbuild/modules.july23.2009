@@ -1,3 +1,7 @@
+# July 23, 2009
+# This list generated from the following command:
+# jhbuild build xserver xf86-video-intel xf86-input-keyboard xorg-apps xkeyboard-config
+
 macros
 bigreqsproto
 compositeproto
