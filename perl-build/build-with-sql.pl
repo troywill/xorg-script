@@ -8,8 +8,9 @@ use DBI;
 # +- Begin Reference Section -----------------------------+
 # http://www.xml.com/pub/a/2001/04/18/perlxmlqstart1.html |
 # Location of tarballs:
-#  http://www.nathancoulson.com/proj_eee.shtml
+# http://www.nathancoulson.com/proj_eee.shtml
 # http://perpetual-notion.blogspot.com/2008/07/gentoo-eee-pc-black-screen-on-resume.html
+# http://www.easysoft.com/developer/languages/perl/dbd_odbc_tutorial_part_2.html
 # +- End Reference Section -------------------------------+
 
 # +- Begin User Defined Variable Section -----------------+
@@ -25,21 +26,64 @@ my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCom
 
 #### Main Program ######## Main Program ######## Main Program ######## Main Program ######## Main Program ####
 # &parse_xorg_xml_and_insert;
-&read_xorg_modules_table_and_print;
-&read_module_data_from_sql;
+# &read_xorg_modules_table_and_print;
+# &read_module_data_from_sql;
+# &two_dimensional_matrix_test;
+&generate_array_from_sql;
+# my @array_of_array_references = &generate_array_from_sql;
+
 #### Place only subroutines below this line ( Troy Will, TDW )
+
+sub generate_array_from_sql {
+    my @array_of_array_references;
+    my $sth2 = $DBH->prepare("SELECT repository, checkout_dir FROM xorg_modules where name = ?");
+    foreach my $module ( @xorg_modules ) {
+	$sth2->execute( $module );
+	my ( $repository, $checkout_dir ) = $sth2->fetchrow();
+	$checkout_dir = '' if !defined $checkout_dir;
+	print "$repository\t=> $checkout_dir\n";
+	push (@array_of_array_references, [ $module, $repository, $checkout_dir ]);
+    }
+
+}
+
+sub parse_xorg_xml_and_insert {
+  ## Parse the X.org XML modules file and insert into SQL table
+  my $parser = XML::Parser->new(ErrorContext => 2, Style => "Tree");
+  my $xmlobj = XML::SimpleObject->new( $parser->parsefile($XML_FILE) );
+  # Create the SQL table
+  $DBH->do("DROP TABLE IF EXISTS xorg_modules");
+  $DBH->do("CREATE TABLE xorg_modules (id INTEGER PRIMARY KEY, name TEXT UNIQUE, repository TEXT, checkout_dir TEXT)");
+
+  my $sth_gs = $DBH->prepare("INSERT INTO xorg_modules VALUES (?, ?, ?, ?)");
+
+  foreach my $element ($xmlobj->child("moduleset")->children("autotools")) {
+    my $id = $element->attribute('id');
+    my $branch = $element->child('branch');
+    my $repo = $branch->attribute('repo');
+    my $module = $branch->attribute('module');
+    my $checkoutdir = $branch->attribute('checkoutdir');
+    $sth_gs->execute( undef, $id, $module, $checkoutdir );
+  }
+}
+
+sub two_dimensional_matrix_test {
+    my @matrix = (
+	['a', 'b', 'c'],
+	['d', 'e', 'f']
+	); # @matrix is an array with two references to arrays
+    foreach my $row (@matrix) {
+	print "$row->[0]\n";
+    }
+}    
 
 sub read_module_data_from_sql {
   my $sth2 = $DBH->prepare("SELECT repository, checkout_dir FROM xorg_modules where name = ?");
   foreach my $module ( @xorg_modules ) {
     $sth2->execute( $module );
     my ( $repository, $checkout_dir ) = $sth2->fetchrow();
-    my $delimeter = "-----------------------------------------------------------------------------\n";
-    print $delimeter;
     my $command = "mkdir -p ~/GIT && cd ~/GIT && git clone $REPO/$repository $checkout_dir";
     $command = "cd ~/GIT/$checkout_dir && git pull";
-    #  print $command, "\n";
-    print "module = $module\nrepository=$repository\n";
     #  system("$command");
   }
 }
@@ -57,36 +101,10 @@ sub read_xorg_modules_table_and_print {
   }
 }
 
-sub parse_xorg_xml_and_insert {
-  ## Parse the X.org XML modules file and insert into SQL table
-  my $parser = XML::Parser->new(ErrorContext => 2, Style => "Tree");
-  my $xmlobj = XML::SimpleObject->new( $parser->parsefile($XML_FILE) );
-  $DBH->do("DROP TABLE IF EXISTS xorg_modules");
-  $DBH->do("CREATE TABLE xorg_modules (id INTEGER PRIMARY KEY, name TEXT UNIQUE, repository TEXT, checkout_dir TEXT)");
-  my $sth_gs = $DBH->prepare("INSERT INTO xorg_modules VALUES (?, ?, ?, ?)");
-  foreach my $element ($xmlobj->child("moduleset")->children("autotools")) {
-    my $id = $element->attribute('id');
-    my $branch = $element->child('branch');
-    my $repo = $branch->attribute('repo');
-    my $module = $branch->attribute('module');
-    my $checkoutdir = $branch->attribute('checkoutdir');
-    print "DEBUG: $checkoutdir\n";
-    warn if ( $repo ne 'git.freedesktop.org');
-    $sth_gs->execute( undef, $id, $module, $checkoutdir );
-  }
-}
-
-sub populate_gnu_software {
-  my $DBH = shift;
-
-  #################### Populate table gnu_software ####################
-  my $sth_gs = $DBH->prepare("INSERT INTO xorg_modules VALUES (?, ?, ?, ?)");
-  $sth_gs->execute( undef,'gcc','GNU Compiler Collection', '4.4.0');
-}
-
 sub return_xorg_modules {
 # Generated from: $ jhbuild list xserver xf86-video-intel xf86-input-keyboard libXft xorg-apps xkeyboard-config 2009-07-24
-# Removed 
+# Removed xorg-protos xorg-apps because they are meta packages
+
     my @xorg_modules = qw (
 		   macros
 		   bigreqsproto
@@ -113,7 +131,6 @@ sub return_xorg_modules {
 		   xf86vidmodeproto
 		   x11proto
 		   dri2proto
-		   xorg-protos
 		   xcb-proto
 		   pthread-stubs
 		   libXau
@@ -184,7 +201,6 @@ sub return_xorg_modules {
 		   xwd
 		   xwininfo
 		   xwud
-		   xorg-apps
 		   xkeyboard-config
 		);
 }
