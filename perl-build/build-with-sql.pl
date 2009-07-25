@@ -1,14 +1,89 @@
 #!/usr/bin/perl
-use strict;
 use warnings;
+use strict;
 use XML::Parser;
 use XML::SimpleObject;
+use DBI;
 
-my $XML_FILE = 'xorg.modules.xml';
+# +- Begin Reference Section -----------------------------+
+# http://www.xml.com/pub/a/2001/04/18/perlxmlqstart1.html |
+# +- End Reference Section -------------------------------+
+
+# +- Begin User Defined Variable Section -----------------+
+my $XML_FILE = 'xorg.modules.xml';                        #
+my $DATABASE = 'gnu.db';                                  #
+# +- End User Defined Variable Section -------------------+
+
+#### Begin General Variable Section #######################
 my $REPO = 'git://git.freedesktop.org/git';
+my @xorg_modules = &return_xorg_modules; # This array is the list of X.Org modules to build
+my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCommit => 1});
+#### End General Variable Section #########################
 
-# Generated from: $ jhbuild list xserver xf86-video-intel xf86-input-keyboard libXft xorg-apps xkeyboard-config 2009-07-24
-my @modules = qw (
+#### Main Program ####
+&parse_xorg_xml_and_insert;
+&read_xorg_modules_table_and_print;
+
+my $sth2 = $DBH->prepare("SELECT repository, checkout_dir FROM xorg_modules where name = ?");
+foreach my $module ( @xorg_modules ) {
+  $sth2->execute( $module );
+  my ( $repository, $checkout_dir ) = $sth2->fetchrow();
+  my $delimeter = "-----------------------------------------------------------------------------\n";
+  print $delimeter;
+  my $command = "mkdir -p ~/GIT && cd ~/GIT && git clone $REPO/$repository $checkout_dir";
+  $command = "cd ~/GIT/$checkout_dir && git pull";
+  #  print $command, "\n";
+  print "module = $module\nrepository=$repository\n";
+  #  system("$command");
+}
+
+#### Place only subroutines below this line ( Troy Will TDW )
+
+sub read_xorg_modules_table_and_print {
+  my $all = $DBH->selectall_arrayref("SELECT * FROM xorg_modules ORDER BY id");
+  foreach my $row (@$all) {
+    my ($id, $name, $repository, $checkout_dir ) = @$row;
+    print "$id\t$name\t$repository\t$checkout_dir\n";
+    my $command = "mkdir -p $checkout_dir && git clone $REPO/$repository $checkout_dir";
+    $command = "git clone $REPO/$repository $checkout_dir";
+    print $command, "\n";
+    #    system $command;
+    #    unlink $checkout_dir;
+  }
+}
+
+sub parse_xorg_xml_and_insert {
+  ## Parse the X.org XML modules file and insert into SQL table
+  my $parser = XML::Parser->new(ErrorContext => 2, Style => "Tree");
+  my $xmlobj = XML::SimpleObject->new( $parser->parsefile($XML_FILE) );
+
+  # my $sth_gs = $DBH->prepare("INSERT INTO xorg_modules VALUES (?, ?, ?, ?)");
+  foreach my $element ($xmlobj->child("moduleset")->children("autotools")) {
+    my $id = $element->attribute('id');
+    my $branch = $element->child('branch');
+    my $repo = $branch->attribute('repo');
+    my $module = $branch->attribute('module');
+    my $checkoutdir = $branch->attribute('checkoutdir');
+    print "$id\t$module\n";
+    warn if ( $repo ne 'git.freedesktop.org');
+
+    #     #################### Populate table gnu_software ####################
+    #     $sth_gs->execute( undef, $id, $module, $checkoutdir );
+    # #    print "foo: ", $element->child('branch')->attribute('repo'), "\n";
+  }
+}
+
+sub populate_gnu_software {
+  my $DBH = shift;
+  $DBH->do("CREATE TABLE xorg_modules (id INTEGER PRIMARY KEY, name TEXT UNIQUE, repository TEXT, checkout_dir TEXT)");
+  #################### Populate table gnu_software ####################
+  my $sth_gs = $DBH->prepare("INSERT INTO xorg_modules VALUES (?, ?, ?, ?)");
+  $sth_gs->execute( undef,'gcc','GNU Compiler Collection', '4.4.0');
+}
+
+sub return_xorg_modules {
+    # Generated from: $ jhbuild list xserver xf86-video-intel xf86-input-keyboard libXft xorg-apps xkeyboard-config 2009-07-24
+    my @xorg_modules = qw (
 		   macros
 		   bigreqsproto
 		   compositeproto
@@ -108,67 +183,7 @@ my @modules = qw (
 		   xorg-apps
 		   xkeyboard-config
 		);
-
-# http://www.xml.com/pub/a/2001/04/18/perlxmlqstart1.html
-use DBI;
-my $database = 'gnu.db';
-# unlink($database);
-my $dbh = DBI->connect("dbi:SQLite:$database", "", "", {RaiseError => 1, AutoCommit => 1});
-# &populate_gnu_software($dbh);
-
-sub populate_gnu_software {
-  my $dbh = shift;
-  $dbh->do("CREATE TABLE xorg_modules (id INTEGER PRIMARY KEY, name TEXT UNIQUE, repository TEXT, checkout_dir TEXT)");
-  #################### Populate table gnu_software ####################
-  my $sth_gs = $dbh->prepare("INSERT INTO xorg_modules VALUES (?, ?, ?, ?)");
-  $sth_gs->execute( undef,'gcc','GNU Compiler Collection', '4.4.0');
 }
-
-my $parser = XML::Parser->new(ErrorContext => 2, Style => "Tree");
-my $xmlobj = XML::SimpleObject->new( $parser->parsefile($XML_FILE) );
-
-# my $sth_gs = $dbh->prepare("INSERT INTO xorg_modules VALUES (?, ?, ?, ?)");
-foreach my $element ($xmlobj->child("moduleset")->children("autotools")) {
-  my $id = $element->attribute('id');
-  my $branch = $element->child('branch');
-  my $repo = $branch->attribute('repo');
-  my $module = $branch->attribute('module');
-  my $checkoutdir = $branch->attribute('checkoutdir');
-  print "$id\t$module\n";
-  warn if ( $repo ne 'git.freedesktop.org');
-
-  #     #################### Populate table gnu_software ####################
-
-  #     $sth_gs->execute( undef, $id, $module, $checkoutdir );
-
-  # #    print "foo: ", $element->child('branch')->attribute('repo'), "\n";
-}
-
-my $all = $dbh->selectall_arrayref("SELECT * FROM xorg_modules ORDER BY id");
-foreach my $row (@$all) {
-  my ($id, $name, $repository, $checkout_dir ) = @$row;
-  print "$id\t$name\t$repository\t$checkout_dir\n";
-  my $command = "mkdir -p $checkout_dir && git clone $REPO/$repository $checkout_dir";
-  $command = "git clone $REPO/$repository $checkout_dir";
-  print $command, "\n";
-  #    system $command;
-  #    unlink $checkout_dir;
-
-}
-
-my $sth2 = $dbh->prepare("SELECT repository, checkout_dir FROM xorg_modules where name = ?");
-foreach my $module ( @modules ) {
-  $sth2->execute( $module );
-  my ( $repository, $checkout_dir ) = $sth2->fetchrow();
-  my $delimeter = "-----------------------------------------------------------------------------\n";
-  print $delimeter;
-  my $command = "mkdir -p ~/GIT && cd ~/GIT && git clone $REPO/$repository $checkout_dir";
-  $command = "cd ~/GIT/$checkout_dir && git pull";
-#  print $command, "\n";
-  print "module = $module\nrepository=$repository\n";
-#  system("$command");
-}
-
 __END__
 #### Begin Section: Useful webpages
 # http://directory.fsf.org/GNU/ Directory of GNU software
@@ -186,19 +201,19 @@ my $target_dir =
 my $tar_command = 'tar --verbose --extract --file';
 
 
-&populate_gnu_mirrors($dbh);
+&populate_gnu_mirrors($DBH);
 
 # &print_mirrors;
 &print_software;
 
 ################################################ Subroutines only below this line ############################
 
-#&populate_gnu_contributors($dbh);
+#&populate_gnu_contributors($DBH);
 
 sub print_software {
   print "=================================== Table gnu_software =================================\n";
-  # $dbh->do("CREATE TABLE gnu_software (id INTEGER PRIMARY KEY, short_name TEXT UNIQUE, name TEXT, latest_version TEXT, date_checked DATE )");
-  my $all = $dbh->selectall_arrayref("SELECT * FROM gnu_software ORDER BY short_name");
+  # $DBH->do("CREATE TABLE gnu_software (id INTEGER PRIMARY KEY, short_name TEXT UNIQUE, name TEXT, latest_version TEXT, date_checked DATE )");
+  my $all = $DBH->selectall_arrayref("SELECT * FROM gnu_software ORDER BY short_name");
   foreach my $row (@$all) {
     my ($id, $short_name, $name, $latest_version, $date_checked ) = @$row;
     print "$short_name-$latest_version ($name)\n";
@@ -206,11 +221,11 @@ sub print_software {
 }
 
   sub print_mirrors {
-    #     $dbh->do("CREATE TABLE continent (id INTEGER PRIMARY KEY, name TEXT)");
-    #     $dbh->do("CREATE TABLE country (id INTEGER PRIMARY KEY, continent_id INTEGER, name TEXT)");
-    #     $dbh->do("CREATE TABLE region (id INTEGER PRIMARY KEY, name TEXT)");
-    #     $dbh->do("CREATE TABLE mirror_url (id INTEGER PRIMARY KEY, country_id, region_id, url TEXT, date_checked DATE)");
-    my $all = $dbh->selectall_arrayref("SELECT * FROM mirror_url ORDER BY country_id, region_id, url");
+    #     $DBH->do("CREATE TABLE continent (id INTEGER PRIMARY KEY, name TEXT)");
+    #     $DBH->do("CREATE TABLE country (id INTEGER PRIMARY KEY, continent_id INTEGER, name TEXT)");
+    #     $DBH->do("CREATE TABLE region (id INTEGER PRIMARY KEY, name TEXT)");
+    #     $DBH->do("CREATE TABLE mirror_url (id INTEGER PRIMARY KEY, country_id, region_id, url TEXT, date_checked DATE)");
+    my $all = $DBH->selectall_arrayref("SELECT * FROM mirror_url ORDER BY country_id, region_id, url");
     foreach my $row (@$all) {
       my ($id, $country_id, $region_id, $url, $date_checked ) = @$row;
       print "$id\t$country_id\t$region_id\t$url\t$date_checked\n";
@@ -218,30 +233,30 @@ sub print_software {
   }
 
   sub populate_gnu_mirrors {
-    my $dbh = shift;
-    $dbh->do("CREATE TABLE continent (id INTEGER PRIMARY KEY, name TEXT)");
-    $dbh->do("CREATE TABLE country (id INTEGER PRIMARY KEY, continent_id INTEGER, name TEXT)");
-    $dbh->do("CREATE TABLE region (id INTEGER PRIMARY KEY, name TEXT)");
-    $dbh->do("CREATE TABLE mirror_url (id INTEGER PRIMARY KEY, country_id, region_id, url TEXT, date_checked DATE)");
+    my $DBH = shift;
+    $DBH->do("CREATE TABLE continent (id INTEGER PRIMARY KEY, name TEXT)");
+    $DBH->do("CREATE TABLE country (id INTEGER PRIMARY KEY, continent_id INTEGER, name TEXT)");
+    $DBH->do("CREATE TABLE region (id INTEGER PRIMARY KEY, name TEXT)");
+    $DBH->do("CREATE TABLE mirror_url (id INTEGER PRIMARY KEY, country_id, region_id, url TEXT, date_checked DATE)");
 
-    $dbh->do("INSERT INTO continent VALUES (1, 'Asia')");
-    $dbh->do("INSERT INTO continent VALUES (2, 'Africa')");
-    $dbh->do("INSERT INTO continent VALUES (3, 'North America')");
-    $dbh->do("INSERT INTO continent VALUES (4, 'South America')");
-    $dbh->do("INSERT INTO continent VALUES (5, 'Antartica')");
-    $dbh->do("INSERT INTO continent VALUES (6, 'Europe')");
-    $dbh->do("INSERT INTO continent VALUES (7, 'Australia')");
+    $DBH->do("INSERT INTO continent VALUES (1, 'Asia')");
+    $DBH->do("INSERT INTO continent VALUES (2, 'Africa')");
+    $DBH->do("INSERT INTO continent VALUES (3, 'North America')");
+    $DBH->do("INSERT INTO continent VALUES (4, 'South America')");
+    $DBH->do("INSERT INTO continent VALUES (5, 'Antartica')");
+    $DBH->do("INSERT INTO continent VALUES (6, 'Europe')");
+    $DBH->do("INSERT INTO continent VALUES (7, 'Australia')");
 
     # Countries
-    $dbh->do("INSERT INTO country VALUES (1, 3, 'United States')");
+    $DBH->do("INSERT INTO country VALUES (1, 3, 'United States')");
 
     #Regions
-    $dbh->do("INSERT INTO region VALUES (1, 'Not specified')");
-    $dbh->do("INSERT INTO region VALUES (2, 'California')");
+    $DBH->do("INSERT INTO region VALUES (1, 'Not specified')");
+    $DBH->do("INSERT INTO region VALUES (2, 'California')");
 
     #Urls
     my $date_checked = '2009-04-19';
-    my $sth_mu = $dbh->prepare("INSERT INTO mirror_url VALUES (?, ?, ?, ?, ?)");
+    my $sth_mu = $DBH->prepare("INSERT INTO mirror_url VALUES (?, ?, ?, ?, ?)");
     $sth_mu->execute(1, 1, 2, 'ftp://mirrors.kernel.org/gnu/', '2009-04-19');
     $sth_mu->execute(2, 1, 2, 'http://mirrors.kernel.org/gnu/', '2009-04-19');
     $sth_mu->execute(3, 1, 2, 'ftp.keystealth.org/pub/gnu/gnu/', '2009-04-19');
@@ -250,7 +265,7 @@ sub print_software {
     $sth_mu->execute(6, 1, 2, 'http://www.alliedquotes.com/mirrors/gnu/gnu/', '2009-04-19');
 	
     
-    #    $dbh->do("INSERT INTO mirror_url VALUES (1, 1, 2, 'ftp://mirrors.kernel.org/gnu/', '2009-04-19')");
+    #    $DBH->do("INSERT INTO mirror_url VALUES (1, 1, 2, 'ftp://mirrors.kernel.org/gnu/', '2009-04-19')");
     #    o [22]http://mirrors.kernel.org/gnu/
   }    
 exit
