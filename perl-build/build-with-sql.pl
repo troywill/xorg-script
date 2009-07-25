@@ -20,7 +20,7 @@ my $DATABASE = 'xorg.db';                                 #
 
 #### Begin General Variable Section #######################
 my $REPO = 'git://git.freedesktop.org/git';
-my @xorg_modules = &return_xorg_modules; # This array is the list of X.Org modules to build
+my @xorg_modules_in_build_order = &return_xorg_modules_in_build_order; # This array is the list of X.Org modules to build in sequential order
 my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCommit => 1});
 #### End General Variable Section #########################
 
@@ -35,14 +35,22 @@ my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCom
 #### Place only subroutines below this line ( Troy Will, TDW )
 
 sub generate_array_from_sql {
+    # Introduction ----------------------------------------------------#
+    # We have have taken XML data and placed it into an SQL table
+    # We want to pull out the data from the SQL table in the package build order.
+    # 
+    #------------------------------------------------------------------#
     my @array_of_array_references;
     my $sth2 = $DBH->prepare("SELECT repository, checkout_dir FROM xorg_modules where name = ?");
-    foreach my $module ( @xorg_modules ) {
+    foreach my $module ( @xorg_modules_in_build_order ) {
 	$sth2->execute( $module );
 	my ( $repository, $checkout_dir ) = $sth2->fetchrow();
 	$checkout_dir = '' if !defined $checkout_dir;
-	print "$repository\t=> $checkout_dir\n";
 	push (@array_of_array_references, [ $module, $repository, $checkout_dir ]);
+    }
+    foreach my $row (@array_of_array_references) {
+	my ($module, $repository, $checkout_dir) = ($row->[0], $row->[1], $row->[2]);
+	print "$module, $repository, $checkout_dir\n";
     }
 
 }
@@ -79,7 +87,7 @@ sub two_dimensional_matrix_test {
 
 sub read_module_data_from_sql {
   my $sth2 = $DBH->prepare("SELECT repository, checkout_dir FROM xorg_modules where name = ?");
-  foreach my $module ( @xorg_modules ) {
+  foreach my $module ( @xorg_modules_in_build_order ) {
     $sth2->execute( $module );
     my ( $repository, $checkout_dir ) = $sth2->fetchrow();
     my $command = "mkdir -p ~/GIT && cd ~/GIT && git clone $REPO/$repository $checkout_dir";
@@ -101,11 +109,11 @@ sub read_xorg_modules_table_and_print {
   }
 }
 
-sub return_xorg_modules {
+sub return_xorg_modules_in_build_order {
 # Generated from: $ jhbuild list xserver xf86-video-intel xf86-input-keyboard libXft xorg-apps xkeyboard-config 2009-07-24
 # Removed xorg-protos xorg-apps because they are meta packages
 
-    my @xorg_modules = qw (
+    my @xorg_modules_in_build_order = qw (
 		   macros
 		   bigreqsproto
 		   compositeproto
