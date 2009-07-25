@@ -8,9 +8,11 @@ use DBI;
 # +- Begin Reference Section -----------------------------+
 # http://www.xml.com/pub/a/2001/04/18/perlxmlqstart1.html |
 # Location of tarballs:
-# http://www.nathancoulson.com/proj_eee.shtml
+# http://www.nathancoulson.com/proj_eee.shtml ( Has kernel config info )
 # http://perpetual-notion.blogspot.com/2008/07/gentoo-eee-pc-black-screen-on-resume.html
 # http://www.easysoft.com/developer/languages/perl/dbd_odbc_tutorial_part_2.html
+# http://dri.sourceforge.net/doc/DRIuserguide.html
+# http://perl.jonallen.info
 # +- End Reference Section -------------------------------+
 
 # +- Begin User Defined Variable Section -----------------+
