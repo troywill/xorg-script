@@ -59,26 +59,23 @@ sub parse_xorg_xml_and_insert {
   ## Parse the X.org XML modules file and insert into SQL table
   my $parser = XML::Parser->new(ErrorContext => 2, Style => "Tree");
   my $xmlobj = XML::SimpleObject->new( $parser->parsefile($XML_FILE) );
-
-  # my $sth_gs = $DBH->prepare("INSERT INTO xorg_modules VALUES (?, ?, ?, ?)");
+#  $DBH->do("DROP TABLE xorg_modules");
+  $DBH->do("CREATE TABLE xorg_modules (id INTEGER PRIMARY KEY, name TEXT UNIQUE, repository TEXT, checkout_dir TEXT)");
+  my $sth_gs = $DBH->prepare("INSERT INTO xorg_modules VALUES (?, ?, ?, ?)");
   foreach my $element ($xmlobj->child("moduleset")->children("autotools")) {
     my $id = $element->attribute('id');
     my $branch = $element->child('branch');
     my $repo = $branch->attribute('repo');
     my $module = $branch->attribute('module');
     my $checkoutdir = $branch->attribute('checkoutdir');
-    print "$id\t$module\n";
     warn if ( $repo ne 'git.freedesktop.org');
-
-    #     #################### Populate table gnu_software ####################
-    #     $sth_gs->execute( undef, $id, $module, $checkoutdir );
-    # #    print "foo: ", $element->child('branch')->attribute('repo'), "\n";
+    $sth_gs->execute( undef, $id, $module, $checkoutdir );
   }
 }
 
 sub populate_gnu_software {
   my $DBH = shift;
-  $DBH->do("CREATE TABLE xorg_modules (id INTEGER PRIMARY KEY, name TEXT UNIQUE, repository TEXT, checkout_dir TEXT)");
+
   #################### Populate table gnu_software ####################
   my $sth_gs = $DBH->prepare("INSERT INTO xorg_modules VALUES (?, ?, ?, ?)");
   $sth_gs->execute( undef,'gcc','GNU Compiler Collection', '4.4.0');
