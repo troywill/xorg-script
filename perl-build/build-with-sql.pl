@@ -9,6 +9,7 @@ use DBI;
 # http://www.xml.com/pub/a/2001/04/18/perlxmlqstart1.html |
 # Location of tarballs:
 #  http://www.nathancoulson.com/proj_eee.shtml
+# http://perpetual-notion.blogspot.com/2008/07/gentoo-eee-pc-black-screen-on-resume.html
 # +- End Reference Section -------------------------------+
 
 # +- Begin User Defined Variable Section -----------------+
@@ -22,11 +23,11 @@ my @xorg_modules = &return_xorg_modules; # This array is the list of X.Org modul
 my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCommit => 1});
 #### End General Variable Section #########################
 
-#### Main Program ####
-&parse_xorg_xml_and_insert;
+#### Main Program ######## Main Program ######## Main Program ######## Main Program ######## Main Program ####
+# &parse_xorg_xml_and_insert;
 &read_xorg_modules_table_and_print;
 &read_module_data_from_sql;
-#### Place only subroutines below this line ( Troy Will TDW )
+#### Place only subroutines below this line ( Troy Will, TDW )
 
 sub read_module_data_from_sql {
   my $sth2 = $DBH->prepare("SELECT repository, checkout_dir FROM xorg_modules where name = ?");
@@ -69,6 +70,7 @@ sub parse_xorg_xml_and_insert {
     my $repo = $branch->attribute('repo');
     my $module = $branch->attribute('module');
     my $checkoutdir = $branch->attribute('checkoutdir');
+    print "DEBUG: $checkoutdir\n";
     warn if ( $repo ne 'git.freedesktop.org');
     $sth_gs->execute( undef, $id, $module, $checkoutdir );
   }
