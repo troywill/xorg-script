@@ -20,6 +20,7 @@ use DBI;
 my $XML_FILE = 'xorg.modules.xml';                        #
 my $DATABASE = 'xorg.db';                                 #
 my $SQL_MODULE_TABLE = 'xorg_modules';                    #
+my $GIT_BASE = "$ENV{'HOME'}/GIT";                        #
 # +- End User Defined Variable Section -------------------+
 
 #### Begin General Variable Section #####################################################################
@@ -30,11 +31,11 @@ my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCom
 
 #### Main Program ######## Main Program ######## Main Program ######## Main Program ######## Main Program ####
 # Take XML data from X.Org and place into an SQL database table
-&parse_xorg_xml_and_insert;
+# &parse_xorg_xml_and_insert;
 # Read SQL table data from previous
 my @array_of_array_references = &generate_array_from_sql;
 # &read_xorg_modules_table_and_print;
-# &do_git;
+&do_git_pull(@array_of_array_references);
 
 #### Place only subroutines below this line ( Troy Will, TDW ) ###
 
@@ -51,10 +52,6 @@ sub generate_array_from_sql {
 	my ( $repository, $checkout_dir ) = $sth2->fetchrow();
 	$checkout_dir = '' if !defined $checkout_dir;
 	push (@array_of_array_references, [ $module, $repository, $checkout_dir ]);
-    }
-    foreach my $row (@array_of_array_references) {
-	my ($module, $repository, $checkout_dir) = ($row->[0], $row->[1], $row->[2]);
-	print "$module, $repository, $checkout_dir\n";
     }
     return @array_of_array_references;
 }
@@ -79,14 +76,22 @@ sub parse_xorg_xml_and_insert {
   }
 }
 
-sub do_git {
-    my @AoA = shift;
-  foreach my $row ( @AoA ) {
-      my ( $repository, $checkout_dir ) = ( $row->[0], $row-[1] );
-      my $command = "mkdir -p ~/GIT && cd ~/GIT && git clone $REPO/$repository $checkout_dir";
-      $command = "cd ~/GIT/$checkout_dir && git pull";
-      #  system("$command");
-  }
+sub do_git_pull {
+    my @AoA = @_;
+    foreach my $row ( @AoA ) {
+	my ( $module, $repository, $checkout_dir ) = ( $row->[0], $row->[1], $row->[2] );
+	my $command = "mkdir -p ~/$GIT_BASE && cd ~/$GIT_BASE && git clone $REPO/$repository $checkout_dir";
+	if ( $checkout_dir eq '' ) {
+	    print "$repository\n";
+	    $repository =~ m/\/(.*?)$/;
+	    # Change mesa/drm to drm, mesa/mesa to mesa
+	    print "$1\n";
+	    $checkout_dir = $1;
+	}
+	my $repo_dir = "$GIT_BASE/$checkout_dir";
+	$command = "cd $repo_dir && git pull";
+	system $command;
+    }
 }
 
 sub read_xorg_modules_table_and_print {
