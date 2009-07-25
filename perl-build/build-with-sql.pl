@@ -4,6 +4,9 @@ use strict;
 use XML::Parser;
 use XML::SimpleObject;
 use DBI;
+#### Written by Troy Will <troydwill@gmail.com> July 2009
+
+
 
 # +- Begin Reference Section -----------------------------+
 # http://www.xml.com/pub/a/2001/04/18/perlxmlqstart1.html |
@@ -35,8 +38,8 @@ my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCom
 # Read SQL table data from previous
 my @array_of_array_references = &generate_array_from_sql;
 # &read_xorg_modules_table_and_print;
-#&do_git_pull(@array_of_array_references);
-&do_git_checkout(@array_of_array_references);
+&do_git_pull(@array_of_array_references);
+#&do_git_checkout(@array_of_array_references);
 
 #### Place only subroutines below this line ( Troy Will, TDW ) ###
 
@@ -86,7 +89,6 @@ sub do_git_pull {
 	    print "$repository\n";
 	    $repository =~ m/\/(.*?)$/;
 	    # Change mesa/drm to drm, mesa/mesa to mesa
-	    print "$1\n";
 	    $checkout_dir = $1;
 	}
 	my $repo_dir = "$GIT_BASE/$checkout_dir";
