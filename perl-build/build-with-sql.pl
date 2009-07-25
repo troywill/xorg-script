@@ -23,21 +23,24 @@ my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCom
 #### Main Program ####
 &parse_xorg_xml_and_insert;
 &read_xorg_modules_table_and_print;
-
-my $sth2 = $DBH->prepare("SELECT repository, checkout_dir FROM xorg_modules where name = ?");
-foreach my $module ( @xorg_modules ) {
-  $sth2->execute( $module );
-  my ( $repository, $checkout_dir ) = $sth2->fetchrow();
-  my $delimeter = "-----------------------------------------------------------------------------\n";
-  print $delimeter;
-  my $command = "mkdir -p ~/GIT && cd ~/GIT && git clone $REPO/$repository $checkout_dir";
-  $command = "cd ~/GIT/$checkout_dir && git pull";
-  #  print $command, "\n";
-  print "module = $module\nrepository=$repository\n";
-  #  system("$command");
-}
+&read_module_data_from_sql;
 
 #### Place only subroutines below this line ( Troy Will TDW )
+
+sub read_module_data_from_sql {
+  my $sth2 = $DBH->prepare("SELECT repository, checkout_dir FROM xorg_modules where name = ?");
+  foreach my $module ( @xorg_modules ) {
+    $sth2->execute( $module );
+    my ( $repository, $checkout_dir ) = $sth2->fetchrow();
+    my $delimeter = "-----------------------------------------------------------------------------\n";
+    print $delimeter;
+    my $command = "mkdir -p ~/GIT && cd ~/GIT && git clone $REPO/$repository $checkout_dir";
+    $command = "cd ~/GIT/$checkout_dir && git pull";
+    #  print $command, "\n";
+    print "module = $module\nrepository=$repository\n";
+    #  system("$command");
+  }
+}
 
 sub read_xorg_modules_table_and_print {
   my $all = $DBH->selectall_arrayref("SELECT * FROM xorg_modules ORDER BY id");
