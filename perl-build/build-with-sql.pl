@@ -28,7 +28,6 @@ my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCom
 # &parse_xorg_xml_and_insert;
 # &read_xorg_modules_table_and_print;
 # &read_module_data_from_sql;
-# &two_dimensional_matrix_test;
 &generate_array_from_sql;
 # my @array_of_array_references = &generate_array_from_sql;
 
@@ -74,16 +73,6 @@ sub parse_xorg_xml_and_insert {
     $sth_gs->execute( undef, $id, $module, $checkoutdir );
   }
 }
-
-sub two_dimensional_matrix_test {
-    my @matrix = (
-	['a', 'b', 'c'],
-	['d', 'e', 'f']
-	); # @matrix is an array with two references to arrays
-    foreach my $row (@matrix) {
-	print "$row->[0]\n";
-    }
-}    
 
 sub read_module_data_from_sql {
   my $sth2 = $DBH->prepare("SELECT repository, checkout_dir FROM xorg_modules where name = ?");
