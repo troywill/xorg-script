@@ -35,7 +35,8 @@ my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCom
 # Read SQL table data from previous
 my @array_of_array_references = &generate_array_from_sql;
 # &read_xorg_modules_table_and_print;
-&do_git_pull(@array_of_array_references);
+#&do_git_pull(@array_of_array_references);
+&do_git_checkout(@array_of_array_references);
 
 #### Place only subroutines below this line ( Troy Will, TDW ) ###
 
@@ -78,9 +79,9 @@ sub parse_xorg_xml_and_insert {
 
 sub do_git_pull {
     my @AoA = @_;
+    system("mkdir --parent $GIT_BASE"); # Does Perl have a mkdir --parent equivalent?
     foreach my $row ( @AoA ) {
-	my ( $module, $repository, $checkout_dir ) = ( $row->[0], $row->[1], $row->[2] );
-	my $command = "mkdir -p ~/$GIT_BASE && cd ~/$GIT_BASE && git clone $REPO/$repository $checkout_dir";
+	my ( $module, $repository, $checkout_dir ) = @$row;
 	if ( $checkout_dir eq '' ) {
 	    print "$repository\n";
 	    $repository =~ m/\/(.*?)$/;
@@ -89,7 +90,21 @@ sub do_git_pull {
 	    $checkout_dir = $1;
 	}
 	my $repo_dir = "$GIT_BASE/$checkout_dir";
-	$command = "cd $repo_dir && git pull";
+	my $command = "cd $repo_dir && git pull";
+	system $command;
+    }
+}
+
+sub do_git_checkout {
+    # Call this function with the array of repository data as an argument
+    # Do a git pull on each module in the array
+    system("mkdir -p $GIT_BASE");
+    my @AoA = @_;
+    foreach my $row ( @AoA ) {
+	my ($module, $repository, $checkout_dir ) = @$row;
+	$checkout_dir = '' if !defined($checkout_dir);
+	my $command = "cd $GIT_BASE && git clone $REPO/$repository $checkout_dir";
+	print $command, "\n";
 	system $command;
     }
 }
