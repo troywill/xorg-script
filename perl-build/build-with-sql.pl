@@ -9,6 +9,7 @@ use DBI;
 # http://www.xml.com/pub/a/2001/04/18/perlxmlqstart1.html |
 # Location of tarballs:
 # http://www.nathancoulson.com/proj_eee.shtml ( Has kernel config info )
+# http://www.nathancoulson.com/proj/eee/config-2.6.25.4-2 ( kernel config info )
 # http://perpetual-notion.blogspot.com/2008/07/gentoo-eee-pc-black-screen-on-resume.html
 # http://www.easysoft.com/developer/languages/perl/dbd_odbc_tutorial_part_2.html
 # http://dri.sourceforge.net/doc/DRIuserguide.html
@@ -18,22 +19,24 @@ use DBI;
 # +- Begin User Defined Variable Section -----------------+
 my $XML_FILE = 'xorg.modules.xml';                        #
 my $DATABASE = 'xorg.db';                                 #
+my $SQL_MODULE_TABLE = 'xorg_modules';                    #
 # +- End User Defined Variable Section -------------------+
 
-#### Begin General Variable Section #######################
+#### Begin General Variable Section #####################################################################
 my $REPO = 'git://git.freedesktop.org/git';
 my @xorg_modules_in_build_order = &return_xorg_modules_in_build_order; # This array is the list of X.Org modules to build in sequential order
 my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCommit => 1});
-#### End General Variable Section #########################
+#### End General Variable Section #######################################################################
 
 #### Main Program ######## Main Program ######## Main Program ######## Main Program ######## Main Program ####
-# &parse_xorg_xml_and_insert;
+# Take XML data from X.Org and place into an SQL database table
+&parse_xorg_xml_and_insert;
+# Read SQL table data from previous
+my @array_of_array_references = &generate_array_from_sql;
 # &read_xorg_modules_table_and_print;
-# &read_module_data_from_sql;
-&generate_array_from_sql;
-# my @array_of_array_references = &generate_array_from_sql;
+# &do_git;
 
-#### Place only subroutines below this line ( Troy Will, TDW )
+#### Place only subroutines below this line ( Troy Will, TDW ) ###
 
 sub generate_array_from_sql {
     # Introduction ----------------------------------------------------#
@@ -42,7 +45,7 @@ sub generate_array_from_sql {
     # 
     #------------------------------------------------------------------#
     my @array_of_array_references;
-    my $sth2 = $DBH->prepare("SELECT repository, checkout_dir FROM xorg_modules where name = ?");
+    my $sth2 = $DBH->prepare("SELECT repository, checkout_dir FROM $SQL_MODULE_TABLE where name = ?");
     foreach my $module ( @xorg_modules_in_build_order ) {
 	$sth2->execute( $module );
 	my ( $repository, $checkout_dir ) = $sth2->fetchrow();
@@ -53,7 +56,7 @@ sub generate_array_from_sql {
 	my ($module, $repository, $checkout_dir) = ($row->[0], $row->[1], $row->[2]);
 	print "$module, $repository, $checkout_dir\n";
     }
-
+    return @array_of_array_references;
 }
 
 sub parse_xorg_xml_and_insert {
@@ -61,10 +64,10 @@ sub parse_xorg_xml_and_insert {
   my $parser = XML::Parser->new(ErrorContext => 2, Style => "Tree");
   my $xmlobj = XML::SimpleObject->new( $parser->parsefile($XML_FILE) );
   # Create the SQL table
-  $DBH->do("DROP TABLE IF EXISTS xorg_modules");
-  $DBH->do("CREATE TABLE xorg_modules (id INTEGER PRIMARY KEY, name TEXT UNIQUE, repository TEXT, checkout_dir TEXT)");
+  $DBH->do("DROP TABLE IF EXISTS $SQL_MODULE_TABLE");
+  $DBH->do("CREATE TABLE $SQL_MODULE_TABLE (id INTEGER PRIMARY KEY, name TEXT UNIQUE, repository TEXT, checkout_dir TEXT)");
 
-  my $sth_gs = $DBH->prepare("INSERT INTO xorg_modules VALUES (?, ?, ?, ?)");
+  my $sth_gs = $DBH->prepare("INSERT INTO $SQL_MODULE_TABLE VALUES (?, ?, ?, ?)");
 
   foreach my $element ($xmlobj->child("moduleset")->children("autotools")) {
     my $id = $element->attribute('id');
@@ -76,19 +79,18 @@ sub parse_xorg_xml_and_insert {
   }
 }
 
-sub read_module_data_from_sql {
-  my $sth2 = $DBH->prepare("SELECT repository, checkout_dir FROM xorg_modules where name = ?");
-  foreach my $module ( @xorg_modules_in_build_order ) {
-    $sth2->execute( $module );
-    my ( $repository, $checkout_dir ) = $sth2->fetchrow();
-    my $command = "mkdir -p ~/GIT && cd ~/GIT && git clone $REPO/$repository $checkout_dir";
-    $command = "cd ~/GIT/$checkout_dir && git pull";
-    #  system("$command");
+sub do_git {
+    my @AoA = shift;
+  foreach my $row ( @AoA ) {
+      my ( $repository, $checkout_dir ) = ( $row->[0], $row-[1] );
+      my $command = "mkdir -p ~/GIT && cd ~/GIT && git clone $REPO/$repository $checkout_dir";
+      $command = "cd ~/GIT/$checkout_dir && git pull";
+      #  system("$command");
   }
 }
 
 sub read_xorg_modules_table_and_print {
-  my $all = $DBH->selectall_arrayref("SELECT * FROM xorg_modules ORDER BY id");
+  my $all = $DBH->selectall_arrayref("SELECT * FROM $SQL_MODULE_TABLE ORDER BY id");
   foreach my $row (@$all) {
     my ($id, $name, $repository, $checkout_dir ) = @$row;
     print "$id\t$name\t$repository\t$checkout_dir\n";
