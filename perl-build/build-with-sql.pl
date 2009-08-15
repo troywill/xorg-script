@@ -6,8 +6,6 @@ use XML::SimpleObject;
 use DBI;
 #### Written by Troy Will <troydwill@gmail.com> July 2009
 
-
-
 # +- Begin Reference Section -----------------------------+
 # http://www.xml.com/pub/a/2001/04/18/perlxmlqstart1.html |
 # Location of tarballs:
@@ -33,15 +31,90 @@ my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCom
 #### End General Variable Section #######################################################################
 
 #### Main Program ######## Main Program ######## Main Program ######## Main Program ######## Main Program ####
-# Take XML data from X.Org and place into an SQL database table
-# &parse_xorg_xml_and_insert;
-# Read SQL table data from previous
-my @array_of_array_references = &generate_array_from_sql;
-# &read_xorg_modules_table_and_print;
-&do_git_pull(@array_of_array_references);
+#&parse_xorg_xml_and_insert; # Take XML data from X.Org and place into an SQL database table
+my @array_of_array_references = &generate_array_from_sql; # Read SQL table data built with &parse_xorg_xml_and_insert
+# &read_xorg_modules_table_and_print; # Print every module, not just ones for Asus Eee PC
 #&do_git_checkout(@array_of_array_references);
+# &do_git_pull(@array_of_array_references);
+# &print_build_order(@array_of_array_references);
+&do_build(@array_of_array_references);
 
 #### Place only subroutines below this line ( Troy Will, TDW ) ###
+
+# print modules and build directories, may want to build individually
+sub print_build_order {
+  my @AoA = @_;
+  my $counter = 0;
+  foreach my $row ( @AoA ) {
+    $counter++;
+    my ( $module, $repository, $checkout_dir ) = @$row;
+    if ( $checkout_dir eq '' ) {
+      $repository =~ m/\/(.*?)$/;
+      # Change mesa/drm to drm, mesa/mesa to mesa
+      $checkout_dir = $1;
+    }
+    my $repo_dir = "$GIT_BASE/$checkout_dir";
+    print "<tr><td>$counter</td><td>$module</td><td>$repo_dir</td></tr>\n";
+  }
+}
+
+  sub do_build {
+    my @AoA = @_;
+    my $counter = 0;
+    foreach my $row ( @AoA ) {
+	$counter++;
+      my ( $module, $repository, $checkout_dir ) = @$row;
+      if ( $checkout_dir eq '' ) {
+	print "$repository\n";
+	$repository =~ m/\/(.*?)$/;
+	# Change mesa/drm to drm, mesa/mesa to mesa
+	$checkout_dir = $1;
+      }
+    my $repo_dir = "$GIT_BASE/$checkout_dir";
+    my $command = "cd $repo_dir && git pull";
+    sub write_build_script {
+      my ( $repo_dir, $module ) = @_;
+      chdir $repo_dir || die "Unable to chdir $repo_dir";
+      my $script = <<END;
+#!/bin/bash
+./autogen.sh
+./configure --prefix=/usr
+make
+make DESTDIR=/stow/xorg install
+stow -v xorg
+END
+      open ( OUT, ">stow-$module.sh");
+      print OUT $script;
+      close OUT;
+    }
+    write_build_script ( $repo_dir, $module );
+    system("sh ./stow-$module.sh");
+    print "\n\n$counter: [$module], Continue?";
+    $_ = <STDIN>;
+  }
+}
+
+sub do_git_checkout {
+    # Call this function with the array of repository data as an argument
+    # Do a git pull on each module in the array
+    system("mkdir -p $GIT_BASE");
+    my @AoA = @_;
+    foreach my $row ( @AoA ) {
+	my ($module, $repository, $checkout_dir ) = @$row;
+	$checkout_dir = '' if !defined($checkout_dir);
+	my $command = "cd $GIT_BASE && git clone $REPO/$repository $checkout_dir";
+	print $command, "\n";
+	system $command;
+    }
+}
+
+sub read_xorg_modules_table_and_print {
+  my $all = $DBH->selectall_arrayref("SELECT * FROM $SQL_MODULE_TABLE ORDER BY id");
+  foreach my $row (@$all) {
+    my ($id, $name, $repository, $checkout_dir ) = @$row;
+    print "$id\t$name\t$repository\t$checkout_dir\n";
+  }
+}
 
 sub generate_array_from_sql {
     # Introduction ----------------------------------------------------#
@@ -95,33 +168,6 @@ sub do_git_pull {
 	my $command = "cd $repo_dir && git pull";
 	system $command;
     }
-}
-
-sub do_git_checkout {
-    # Call this function with the array of repository data as an argument
-    # Do a git pull on each module in the array
-    system("mkdir -p $GIT_BASE");
-    my @AoA = @_;
-    foreach my $row ( @AoA ) {
-	my ($module, $repository, $checkout_dir ) = @$row;
-	$checkout_dir = '' if !defined($checkout_dir);
-	my $command = "cd $GIT_BASE && git clone $REPO/$repository $checkout_dir";
-	print $command, "\n";
-	system $command;
-    }
-}
-
-sub read_xorg_modules_table_and_print {
-  my $all = $DBH->selectall_arrayref("SELECT * FROM $SQL_MODULE_TABLE ORDER BY id");
-  foreach my $row (@$all) {
-    my ($id, $name, $repository, $checkout_dir ) = @$row;
-    print "$id\t$name\t$repository\t$checkout_dir\n";
-    my $command = "mkdir -p $checkout_dir && git clone $REPO/$repository $checkout_dir";
-    $command = "git clone $REPO/$repository $checkout_dir";
-    print $command, "\n";
-    #    system $command;
-    #    unlink $checkout_dir;
-  }
 }
 
 sub return_xorg_modules_in_build_order {
@@ -187,6 +233,7 @@ sub return_xorg_modules_in_build_order {
 		   libXvMC
 		   xf86-video-intel
 		   xf86-input-keyboard
+		   xf86-input-mouse
 		   libXrender
 		   fontconfig
 		   libXft
