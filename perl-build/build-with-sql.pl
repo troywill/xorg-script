@@ -33,11 +33,11 @@ my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCom
 #### Main Program ######## Main Program ######## Main Program ######## Main Program ######## Main Program ####
 &parse_xorg_xml_and_insert; # Take XML data from X.Org and place into an SQL database table
 my @array_of_array_references = &generate_array_from_sql; # Read SQL table data built with &parse_xorg_xml_and_insert
-# &read_xorg_modules_table_and_print; # Print every module, not just ones for Asus Eee PC
+&read_xorg_modules_table_and_print; # Print every module, not just ones for Asus Eee PC
 &do_git_checkout(@array_of_array_references);
-# &do_git_pull(@array_of_array_references);
-# &print_build_order(@array_of_array_references);
-# &do_build(@array_of_array_references);
+&do_git_pull(@array_of_array_references);
+&print_build_order(@array_of_array_references);
+&do_build(@array_of_array_references);
 
 #### Place only subroutines below this line ( Troy Will, TDW ) ###
 
@@ -84,10 +84,10 @@ sub print_build_order {
     foreach my $row ( @AoA ) {
       $counter++;
       my ( $module, $repository, $checkout_dir ) = @$row;
+      print "Building package $counter: $module\n--------------------------------\n";
       if ( $checkout_dir eq '' ) {
-	print "$repository\n";
 	$repository =~ m/\/(.*?)$/;
-	# Change mesa/drm to drm, mesa/mesa to mesa
+	# Change mesa/drm to drm, mesa/mesa to mesa (TDW 2009)
 	$checkout_dir = $1;
       }
       my $repo_dir = "$GIT_BASE/$checkout_dir";
@@ -97,6 +97,7 @@ sub print_build_order {
 	chdir $repo_dir || die "Unable to chdir $repo_dir";
 	my $script = <<END;
 #!/bin/bash
+make clean
 ./autogen.sh
 ./configure --prefix=/usr
 make
@@ -108,8 +109,10 @@ END
 	close OUT;
       }
       write_build_script ( $repo_dir, $module );
+      print "\n\n Shall I build $module, Press any key to continue.";
+      $_ = <STDIN>;
       system("sh ./stow-$module.sh");
-      print "\n\n$counter: [$module], Continue?";
+      print "\n\n$counter: [$module] END, Continue? Press any key";
       $_ = <STDIN>;
     }
   }
@@ -120,7 +123,7 @@ sub do_git_checkout {
   system("mkdir -p $GIT_BASE");
   my @AoA = @_;
   foreach my $row ( @AoA ) {
-      print "==> @$row\n"; sleep 1;
+    print "==> @$row\n"; sleep 1;
     my ($module, $repository, $checkout_dir ) = @$row;
     $checkout_dir = '' if !defined($checkout_dir);
     my $command = "cd $GIT_BASE && git clone $REPO/$repository $checkout_dir";
@@ -201,7 +204,6 @@ sub return_xorg_modules_in_build_order {
 					 xf86vidmodeproto
 					 x11proto
 					 dri2proto
-					 xorg-protos
 					 xcb-proto
 					 pthread-stubs
 					 libXau
@@ -238,16 +240,18 @@ sub return_xorg_modules_in_build_order {
 					 libXvMC
 					 xf86-video-intel
 					 xf86-input-keyboard
-					 libXrender
-					 fontconfig
-					 libXft
+					 xkbcomp
+					 xkeyboard-config
 					 iceauth
 					 luit
+					 libXrender
 					 rendercheck
 					 scripts
 					 setxkbmap
 					 smproxy
 					 twm
+					 fontconfig
+					 libXft
 					 x11perf
 					 xauth
 					 xdpyinfo
@@ -257,7 +261,6 @@ sub return_xorg_modules_in_build_order {
 					 xhost
 					 xinit
 					 xinput
-					 xkbcomp
 					 xkill
 					 xlogo
 					 xlsatoms
@@ -274,8 +277,5 @@ sub return_xorg_modules_in_build_order {
 					 xwd
 					 xwininfo
 					 xwud
-					 xorg-apps
-					 xkeyboard-config
 				      );
 }
-
