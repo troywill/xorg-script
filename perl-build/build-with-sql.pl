@@ -101,8 +101,8 @@ make clean
 ./autogen.sh
 ./configure --prefix=/usr
 make
-make DESTDIR=/stow/xorg install
-stow -v xorg
+sudo make DESTDIR=/stow/xorg-$module.091013 install
+sudo stow -v xorg
 END
 	open ( OUT, ">stow-$module.sh");
 	print OUT $script;
