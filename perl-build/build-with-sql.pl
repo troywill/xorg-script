@@ -18,7 +18,7 @@ use DBI;
 # +- End Reference Section -------------------------------+
 
 # +- Begin User Defined Variable Section -----------------+
-my $XML_FILE = 'xorg.modules.091009.xml';
+my $XML_FILE = 'xorg.modules.091013.xml';
 my $DATABASE = 'xorg.db';
 my $SQL_MODULE_TABLE = 'xorg_modules';
 my $GIT_BASE = "$ENV{'HOME'}/GIT";
