@@ -31,12 +31,12 @@ my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCom
 #### End General Variable Section #######################################################################
 
 #### Main Program ######## Main Program ######## Main Program ######## Main Program ######## Main Program ####
-&parse_xorg_xml_and_insert; # Take XML data from X.Org and place into an SQL database table
+# &parse_xorg_xml_and_insert; # Take XML data from X.Org and place into an SQL database table
 my @array_of_array_references = &generate_array_from_sql; # Read SQL table data built with &parse_xorg_xml_and_insert
-&read_xorg_modules_table_and_print; # Print every module, not just ones for Asus Eee PC
-&do_git_checkout(@array_of_array_references);
+# &read_xorg_modules_table_and_print; # Print every module, not just ones for Asus Eee PC
+# &do_git_checkout(@array_of_array_references);
 &do_git_pull(@array_of_array_references);
-&print_build_order(@array_of_array_references);
+# &print_build_order(@array_of_array_references);
 &do_build(@array_of_array_references);
 
 #### Place only subroutines below this line ( Troy Will, TDW ) ###
@@ -61,61 +61,67 @@ sub parse_xorg_xml_and_insert {
   }
 }
 
-# print modules and build directories, may want to build individually
-sub print_build_order {
+# # print modules and build directories, may want to build individually
+# sub print_build_order {
+#   my @AoA = @_;
+#   my $counter = 0;
+#   foreach my $row ( @AoA ) {
+#     $counter++;
+#     my ( $module, $repository, $checkout_dir ) = @$row;
+#     if ( $checkout_dir eq '' ) {
+#       $repository =~ m/\/(.*?)$/;
+#       # Change mesa/drm to drm, mesa/mesa to mesa
+#       $checkout_dir = $1;
+#     }
+#     my $repo_dir = "$GIT_BASE/$checkout_dir";
+#     print "<tr><td>$counter</td><td>$module</td><td>$repo_dir</td></tr>\n";
+#   }
+# }
+
+sub do_build {
   my @AoA = @_;
   my $counter = 0;
   foreach my $row ( @AoA ) {
     $counter++;
     my ( $module, $repository, $checkout_dir ) = @$row;
+
     if ( $checkout_dir eq '' ) {
       $repository =~ m/\/(.*?)$/;
-      # Change mesa/drm to drm, mesa/mesa to mesa
+      # Change mesa/drm to drm, mesa/mesa to mesa (TDW 2009)
       $checkout_dir = $1;
     }
     my $repo_dir = "$GIT_BASE/$checkout_dir";
-    print "<tr><td>$counter</td><td>$module</td><td>$repo_dir</td></tr>\n";
-  }
-}
-
-  sub do_build {
-    my @AoA = @_;
-    my $counter = 0;
-    foreach my $row ( @AoA ) {
-      $counter++;
-      my ( $module, $repository, $checkout_dir ) = @$row;
-      print "Building package $counter: $module\n--------------------------------\n";
-      if ( $checkout_dir eq '' ) {
-	$repository =~ m/\/(.*?)$/;
-	# Change mesa/drm to drm, mesa/mesa to mesa (TDW 2009)
-	$checkout_dir = $1;
-      }
-      my $repo_dir = "$GIT_BASE/$checkout_dir";
-      my $command = "cd $repo_dir && git pull";
-      sub write_build_script {
-	my ( $repo_dir, $module ) = @_;
-	chdir $repo_dir || die "Unable to chdir $repo_dir";
-	my $script = <<END;
+    my $command = "cd $repo_dir && git pull";
+    print "Package $counter: $module, shall I build (y/n)?";
+    my $answer = <STDIN>;
+    chomp ($answer);
+    if ( $answer eq 'y' ) {
+      write_build_script ( $repo_dir, $module );
+    } else {
+      print "Skipping $module\n";
+    }
+    sub write_build_script {
+      my ( $repo_dir, $module ) = @_;
+      my $formated_counter = sprintf('%03d', $counter);
+      my $stow_dir = "X.$formated_counter.$module.14";
+      print "chdir $repo_dir; ";
+      chdir $repo_dir || die "Unable to chdir $repo_dir";
+      my $script = <<END;
 #!/bin/bash
-make clean
 ./autogen.sh
 ./configure --prefix=/usr
 make
-sudo make DESTDIR=/stow/xorg-$module.091013 install
-sudo stow -v xorg
+sudo make DESTDIR=/stow/$stow_dir install
+sudo stow -v $stow_dir;
 END
-	open ( OUT, ">stow-$module.sh");
-	print OUT $script;
-	close OUT;
-      }
-      write_build_script ( $repo_dir, $module );
-      print "\n\n Shall I build $module, Press any key to continue.";
-      $_ = <STDIN>;
+      open ( OUT, ">stow-$module.sh");
+      print OUT $script;
+      close OUT;
       system("sh ./stow-$module.sh");
-      print "\n\n$counter: [$module] END, Continue? Press any key";
-      $_ = <STDIN>;
+      print "\n [$module] END\n";
     }
   }
+}
 
 sub do_git_checkout {
   # Call this function with the array of repository data as an argument
@@ -226,8 +232,8 @@ sub return_xorg_modules_in_build_order {
 					 libXaw
 					 libxkbfile
 					 libxkbui
-					 mkfontscale
 					 libfontenc
+					 mkfontscale
 					 libXfont
 					 libXinerama
 					 libdmx
