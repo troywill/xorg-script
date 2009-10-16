@@ -9,4 +9,3 @@ aptitude install build-essential emacs22-nox git-core autoconf libtool bzip2 sud
 # bison, flex => needed by twm
 # intltoolize => needed by xkeyboard-config
 # xkeyboard-config => AM_GLIB_GNU_GETTEXT: command not found => libglib2.0-dev
-
