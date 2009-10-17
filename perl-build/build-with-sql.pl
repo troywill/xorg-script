@@ -24,23 +24,34 @@ my $SQL_MODULE_TABLE = 'xorg_modules';
 my $GIT_BASE = "$ENV{'HOME'}/GIT";
 # +- End User Defined Variable Section -------------------+
 
-#### Begin General Variable Section #####################################################################
+# +- Begin General Variable Section ----------------------+
 my $REPO = 'git://git.freedesktop.org/git';
 my @xorg_modules_in_build_order = &return_xorg_modules_in_build_order; # This array is the list of X.Org modules to build in sequential order
 my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCommit => 1});
-#### End General Variable Section #######################################################################
+# +- End General Variable Section ------------------------+
 
-#### Main Program ######## Main Program ######## Main Program ######## Main Program ######## Main Program ####
-# &parse_xorg_xml_and_insert; # Take XML data from X.Org and place into an SQL database table
+# + Main Program -----------------------------------------+
+
 my @array_of_array_references = &generate_array_from_sql; # Read SQL table data built with &parse_xorg_xml_and_insert
-# &read_xorg_modules_table_and_print; # Print every module, not just ones for Asus Eee PC
 # &do_git_checkout(@array_of_array_references);
-&do_git_pull(@array_of_array_references);
+# &do_git_pull(@array_of_array_references);
 # &print_build_order(@array_of_array_references);
-&do_build(@array_of_array_references);
+# &do_build(@array_of_array_references);
+
+my @menu = (
+             [ '1', 'Parse xorg.xml and insert', \&parse_xorg_xml_and_insert ],
+             # Print every module, not just ones for Asus Eee PC
+             [ '2', 'Read xorg modules table and print', \&read_xorg_modules_table_and_print ], 
+    );
+
+foreach my $aref ( @menu ) {
+    my $code_ref = $aref->[2];
+    &$code_ref;
+}
 
 #### Place only subroutines below this line ( Troy Will, TDW ) ###
 
+# Take XML data from X.Org and place into an SQL database table
 sub parse_xorg_xml_and_insert {
   ## Parse the X.org XML modules file and insert into SQL table
   my $parser = XML::Parser->new(ErrorContext => 2, Style => "Tree");
@@ -96,12 +107,12 @@ sub do_build {
     my $answer = <STDIN>;
     chomp ($answer);
     if ( $answer eq 'y' ) {
-      write_build_script ( $repo_dir, $module );
+      write_build_script ( $repo_dir, $module, $counter );
     } else {
       print "Skipping $module\n";
     }
     sub write_build_script {
-      my ( $repo_dir, $module ) = @_;
+      my ( $repo_dir, $module, $counter ) = @_;
       my $formated_counter = sprintf('%03d', $counter);
       my $stow_dir = "X.$formated_counter.$module.14";
       print "chdir $repo_dir; ";
