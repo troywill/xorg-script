@@ -36,13 +36,15 @@ my @array_of_array_references = &generate_array_from_sql; # Read SQL table data 
 
 my @menu = (
 	    [ '1', 'Parse xorg.xml and insert',         \&parse_xorg_xml_and_insert, '' ],
+    # Print every module, not just ones for Asus Eee PC
 	    [ '2', 'Read xorg modules table and print', \&read_xorg_modules_table_and_print, '' ],
 	    [ '3', 'Git checkout',                      \&do_git_checkout, @array_of_array_references ],
-	    [ '4', 'Git pull',                      \&do_git_pull, @array_of_array_references ]
+	    [ '4', 'Git pull',                      \&do_git_pull, @array_of_array_references ],
+            [ '5', 'Build X System',                      \&do_build, @array_of_array_references ]
+    
     );
 
-    # Print every module, not just ones for Asus Eee PC
-    # &do_git_pull(@array_of_array_references);
+
     # &print_build_order(@array_of_array_references);
     # &do_build(@array_of_array_references);
 
@@ -84,6 +86,10 @@ sub parse_xorg_xml_and_insert {
     my $repo = $branch->attribute('repo');
     my $module = $branch->attribute('module');
     my $checkoutdir = $branch->attribute('checkoutdir');
+    if ( !defined($checkoutdir) ) {
+	$checkoutdir = $module;
+	print "==>$checkoutdir\n";
+    }
     $sth_gs->execute( undef, $id, $module, $checkoutdir );
   }
 }
