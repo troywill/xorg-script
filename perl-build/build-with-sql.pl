@@ -37,7 +37,8 @@ my @array_of_array_references = &generate_array_from_sql; # Read SQL table data 
 my @menu = (
 	    [ '1', 'Parse xorg.xml and insert',         \&parse_xorg_xml_and_insert, '' ],
 	    [ '2', 'Read xorg modules table and print', \&read_xorg_modules_table_and_print, '' ],
-	    [ '3', 'Git checkout',                      \&do_git_checkout, @array_of_array_references ]
+	    [ '3', 'Git checkout',                      \&do_git_checkout, @array_of_array_references ],
+	    [ '4', 'Git pull',                      \&do_git_pull, @array_of_array_references ]
     );
 
     # Print every module, not just ones for Asus Eee PC
@@ -87,34 +88,17 @@ sub parse_xorg_xml_and_insert {
   }
 }
 
-# # print modules and build directories, may want to build individually
-# sub print_build_order {
-#   my @AoA = @_;
-#   my $counter = 0;
-#   foreach my $row ( @AoA ) {
-#     $counter++;
-#     my ( $module, $repository, $checkout_dir ) = @$row;
-#     if ( $checkout_dir eq '' ) {
-#       $repository =~ m/\/(.*?)$/;
-#       # Change mesa/drm to drm, mesa/mesa to mesa
-#       $checkout_dir = $1;
-#     }
-#     my $repo_dir = "$GIT_BASE/$checkout_dir";
-#     print "<tr><td>$counter</td><td>$module</td><td>$repo_dir</td></tr>\n";
-#   }
-# }
-
 sub do_build {
   my @AoA = @_;
   my $counter = 0;
   foreach my $row ( @AoA ) {
     $counter++;
     my ( $module, $repository, $checkout_dir ) = @$row;
-
-    if ( $checkout_dir eq '' ) {
-      $repository =~ m/\/(.*?)$/;
+    if ( $checkout_dir eq '' || !defined($checkout_dir )) {
+#      $repository =~ m/\/(.*?)$/;
       # Change mesa/drm to drm, mesa/mesa to mesa (TDW 2009)
-      $checkout_dir = $1;
+#      $checkout_dir = $1;
+      $checkout_dir = $repository;
     }
     my $repo_dir = "$GIT_BASE/$checkout_dir";
     my $command = "cd $repo_dir && git pull";
@@ -157,7 +141,7 @@ sub do_git_checkout {
   foreach my $row ( @AoA ) {
     print "==> @$row\n"; sleep 1;
     my ($module, $repository, $checkout_dir ) = @$row;
-    $checkout_dir = '' if !defined($checkout_dir);
+    $checkout_dir = $repository if ( !defined($checkout_dir) || $checkout_dir eq '' );
     my $command = "cd $GIT_BASE && git clone $REPO/$repository $checkout_dir";
     print $command, "\n";
     system $command;
