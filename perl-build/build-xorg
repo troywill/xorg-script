@@ -108,18 +108,19 @@ sub do_build {
     }
     my $repo_dir = "$GIT_BASE/$checkout_dir";
     my $command = "cd $repo_dir && git pull";
-    print "Package $counter: $module, shall I build (y/n)?";
+    print "Package $counter: $module, shall I build ([y]/n)?";
     my $answer = <STDIN>;
     chomp ($answer);
-    if ( $answer eq 'y' ) {
+    if ( $answer eq 'y' || $answer eq '') {
       write_build_script ( $repo_dir, $module, $counter );
     } else {
       print "Skipping $module\n";
     }
     sub write_build_script {
       my ( $repo_dir, $module, $counter ) = @_;
-      my $formated_counter = sprintf('%03d', $counter);
-      my $stow_dir = "X.$formated_counter.$module.14";
+      my $formated_counter = sprintf('%02d', $counter);
+      my $stow_dir = "X.$formated_counter.$module.17";
+#      my $stow_dir = "X.17";
       print "chdir $repo_dir; ";
       chdir $repo_dir || die "Unable to chdir $repo_dir";
       my $script = <<END;
@@ -135,6 +136,7 @@ END
       close OUT;
       system("sh ./stow-$module.sh");
       print "\n [$module] END\n";
+      &sound_prompt;
     }
   }
 }
@@ -209,4 +211,8 @@ sub return_xorg_modules_in_build_order {
   close IN;
   return @xorg_modules_in_build_order;
   exit;
+}
+
+sub sound_prompt {
+    print "\a";
 }
