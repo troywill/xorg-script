@@ -1,1 +1,0 @@
-../xorg-git-page/xorg-git-table.txt
