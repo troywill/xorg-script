@@ -33,20 +33,35 @@ my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCom
 # + Main Program -----------------------------------------+
 
 my @array_of_array_references = &generate_array_from_sql; # Read SQL table data built with &parse_xorg_xml_and_insert
-# &do_git_checkout(@array_of_array_references);
-# &do_git_pull(@array_of_array_references);
-# &print_build_order(@array_of_array_references);
-# &do_build(@array_of_array_references);
 
 my @menu = (
-             [ '1', 'Parse xorg.xml and insert', \&parse_xorg_xml_and_insert ],
-             # Print every module, not just ones for Asus Eee PC
-             [ '2', 'Read xorg modules table and print', \&read_xorg_modules_table_and_print ], 
+	    [ '1', 'Parse xorg.xml and insert',         \&parse_xorg_xml_and_insert, '' ],
+	    [ '2', 'Read xorg modules table and print', \&read_xorg_modules_table_and_print, '' ],
+	    [ '3', 'Git checkout',                      \&do_git_checkout, @array_of_array_references ]
     );
 
-foreach my $aref ( @menu ) {
-    my $code_ref = $aref->[2];
-    &$code_ref;
+    # Print every module, not just ones for Asus Eee PC
+    # &do_git_pull(@array_of_array_references);
+    # &print_build_order(@array_of_array_references);
+    # &do_build(@array_of_array_references);
+
+
+print `clear`;
+while (1) {
+    foreach my $aref ( @menu ) {
+#    my ( $key_to_press, $prompt, $code_ref = $aref->[2];
+	my ( $key_to_press, $prompt, $code_ref ) = @{$aref};
+	print "$key_to_press: $prompt\n";
+    }
+    chomp(my $input = <STDIN>);
+    foreach my $aref ( @menu ) {
+#    my ( $key_to_press, $prompt, $code_ref = $aref->[2];
+	my ( $key_to_press, $prompt, $code_ref, @arguements ) = @{$aref};
+	# &$code_ref; # Run the subroutine
+	if ( $input eq $key_to_press ) {
+	    &$code_ref(@arguements); # Run the subroutine
+	}
+    }
 }
 
 #### Place only subroutines below this line ( Troy Will, TDW ) ###
