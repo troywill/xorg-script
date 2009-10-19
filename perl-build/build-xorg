@@ -139,7 +139,7 @@ sub write_build_script {
   my ( $repo_dir, $module, $repository, $counter, $filename ) = @_;
   my $script = &generate_build_script ( $repo_dir, $module, $counter );
   chdir $repo_dir || die "Unable to chdir $repo_dir";
-  open ( OUT, ">>$filename");
+  open ( OUT, ">$filename");
   print OUT $script;
   close OUT;
 }
