@@ -45,7 +45,12 @@ my @menu = (
 	    [ '3', 'Git checkout',                      \&do_git_checkout, @array_of_array_references ],
 	    [ '4', 'Git pull',                          \&do_git_pull, @array_of_array_references ],
             [ '5', 'Build X System',                    \&do_build, @array_of_array_references ],
-            [ '6', 'Write Build Scripts',               \&write_all_scripts, @array_of_array_references ]	   );
+            [ '6', 'Write Build Scripts',               \&write_all_scripts, @array_of_array_references ],
+            [ '7', 'Generate wget list',               \&generate_wget_list, @array_of_array_references ],
+            [ '8', 'Parse xorg.xml and print metamodules', \&parse_xorg_xml_and_print_meta_modules, '' ] );
+
+
+# http://www.x.org/releases/X11R7.5/src/everything/applewmproto-1.4.1.tar.bz2
 
 
 # &print_build_order(@array_of_array_references);
@@ -69,6 +74,24 @@ while (1) {
 }
 
 #### Place only subroutines below this line ( Troy Will, TDW ) ###
+
+# Take XML data from X.Org and print meta modules
+sub parse_xorg_xml_and_print_meta_modules {
+  ## Parse the X.org XML modules file and insert into SQL table
+  my $parser = XML::Parser->new(ErrorContext => 2, Style => "Tree");
+  my $xmlobj = XML::SimpleObject->new( $parser->parsefile($XML_FILE) );
+
+  # foreach my $element ($xmlobj->child("moduleset")->children("metamodule")) { # WORKS
+  foreach my $element ($xmlobj->child("moduleset")->child("metamodule")->child("dependencies")->children("dep")) {
+#    my $id = $element->attribute('id');
+    print $element->attribute('package'), "\n";
+    # my $branch = $element->child('branch');
+    # my $repo = $branch->attribute('repo');
+    # my $module = $branch->attribute('module');
+    # my $checkoutdir = $branch->attribute('checkoutdir');
+#    print '$element->attribute(\'id\');', " $id <=\n";
+  }
+}
 
 # Take XML data from X.Org and place into an SQL database table
 sub parse_xorg_xml_and_insert {
@@ -120,6 +143,20 @@ sub do_build {
   }
 }
 
+sub generate_wget_list {
+  my @AoA = @_;
+  my $counter = 0;
+  my $suffix = 'tmpl';
+  foreach my $row ( @AoA ) {
+    $counter++;
+    my ( $module, $repository, $checkout_dir ) = @$row;
+    my $repo_dir = "$GIT_BASE/$checkout_dir";
+    my $command = "grep $module /tmp/bz.txt";
+    chomp( my $tarball = `$command`);
+    print "$module => $tarball\n";
+  }
+}
+
 sub write_all_scripts {
     open ( LOGFILE, ">$GIT_BASE/xorg-build-all-with-stow.sh");
     print LOGFILE "#!/bin/bash\nset -o errexit\nBUILD_DIR=**<EDIT_ME>**\n";
@@ -152,7 +189,7 @@ sub generate_build_script {
   my ( $repo_dir, $module, $counter ) = @_;
   print "==>[$repo_dir], [$module], [$counter]<==\n";
   my $formated_counter = sprintf('%003d', $counter);
-  my $stow_dir = "X.$formated_counter.$module.oct29";
+  my $stow_dir = "X.$formated_counter.$module.nov01";
   # $stow_dir = "X.17";
   my $script = <<END;
 #!/bin/bash
