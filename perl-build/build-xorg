@@ -23,6 +23,7 @@ my $BUILD_LIST_FILE = 'data/build-list/build-list.091027';
 my $DATABASE = 'xorg.db';
 my $SQL_MODULE_TABLE = 'xorg_modules';
 my $GIT_BASE = "$ENV{'HOME'}/XORG-GIT";
+my $SUFFIX = 'nov08';
 # +- End User Defined Variable Section -------------------+
 
 # +- Begin General Variable Section ----------------------+
@@ -158,9 +159,14 @@ sub generate_wget_list {
 }
 
 sub write_all_scripts {
-    open ( LOGFILE, ">$GIT_BASE/xorg-build-all-with-stow.sh");
-    print LOGFILE "#!/bin/bash\nset -o errexit\nBUILD_DIR=**<EDIT_ME>**\n";
-  my @AoA = @_;
+  open ( LOGFILE, ">$GIT_BASE/xorg-build-all-with-stow.sh");
+  print LOGFILE <<'EOF';
+#!/bin/bash
+set -o errexit
+BUILD_DIR=**<EDIT_ME>**\n";
+# export CFLAGS='-march=native -Os';
+EOF
+      my @AoA = @_;
   my $counter = 0;
   my $suffix = 'tmpl';
   foreach my $row ( @AoA ) {
@@ -189,8 +195,8 @@ sub generate_build_script {
   my ( $repo_dir, $module, $counter ) = @_;
   print "==>[$repo_dir], [$module], [$counter]<==\n";
   my $formated_counter = sprintf('%003d', $counter);
-  my $stow_dir = "X.$formated_counter.$module.nov01";
-  # $stow_dir = "X.17";
+  my $stow_dir = "X.$formated_counter.$module.$SUFFIX";
+  $stow_dir = 'X.Nov.20';
   my $script = <<END;
 #!/bin/bash
 set -o errexit
