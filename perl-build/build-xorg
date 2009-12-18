@@ -196,7 +196,7 @@ sub generate_build_script {
   print "==>[$repo_dir], [$module], [$counter]<==\n";
   my $formated_counter = sprintf('%003d', $counter);
   my $stow_dir = "X.$formated_counter.$module.$SUFFIX";
-  $stow_dir = 'X.Nov.20';
+  $stow_dir = 'X.Dec.17';
   my $script = <<END;
 #!/bin/bash
 set -o errexit
