@@ -23,7 +23,7 @@ my $BUILD_LIST_FILE = 'data/build-list/build-list.091027';
 my $DATABASE = 'xorg.db';
 my $SQL_MODULE_TABLE = 'xorg_modules';
 my $GIT_BASE = "$ENV{'HOME'}/XORG-GIT";
-my $SUFFIX = 'nov08';
+my $SUFFIX = 'dec_17';
 # +- End User Defined Variable Section -------------------+
 
 # +- Begin General Variable Section ----------------------+
