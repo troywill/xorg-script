@@ -23,7 +23,7 @@ my $BUILD_LIST_FILE = 'data/build-list/build-list.100406';
 my $DATABASE = 'xorg.db';
 my $SQL_MODULE_TABLE = 'xorg_modules';
 my $GIT_BASE = "$ENV{'HOME'}/XORG-GIT";
-my $SUFFIX = 'dec_17';
+my $SUFFIX = 'apr_06';
 # +- End User Defined Variable Section -------------------+
 
 # +- Begin General Variable Section ----------------------+
@@ -35,7 +35,7 @@ my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCom
 # +- End General Variable Section ------------------------+
 
 # + Main Program -----------------------------------------+
-
+# my @array_of_array_references;
 my @array_of_array_references = &generate_array_from_sql; # Read SQL table data built with &parse_xorg_xml_and_insert
 
 
@@ -76,29 +76,12 @@ while (1) {
 
 #### Place only subroutines below this line ( Troy Will, TDW ) ###
 
-# Take XML data from X.Org and print meta modules
-sub parse_xorg_xml_and_print_meta_modules {
-  ## Parse the X.org XML modules file and insert into SQL table
-  my $parser = XML::Parser->new(ErrorContext => 2, Style => "Tree");
-  my $xmlobj = XML::SimpleObject->new( $parser->parsefile($XML_FILE) );
-
-  # foreach my $element ($xmlobj->child("moduleset")->children("metamodule")) { # WORKS
-  foreach my $element ($xmlobj->child("moduleset")->child("metamodule")->child("dependencies")->children("dep")) {
-#    my $id = $element->attribute('id');
-    print $element->attribute('package'), "\n";
-    # my $branch = $element->child('branch');
-    # my $repo = $branch->attribute('repo');
-    # my $module = $branch->attribute('module');
-    # my $checkoutdir = $branch->attribute('checkoutdir');
-#    print '$element->attribute(\'id\');', " $id <=\n";
-  }
-}
-
 # Take XML data from X.Org and place into an SQL database table
 sub parse_xorg_xml_and_insert {
+    $xml_file = shift;
   ## Parse the X.org XML modules file and insert into SQL table
   my $parser = XML::Parser->new(ErrorContext => 2, Style => "Tree");
-  my $xmlobj = XML::SimpleObject->new( $parser->parsefile($XML_FILE) );
+  my $xmlobj = XML::SimpleObject->new( $parser->parsefile($xml_file) );
   # Create the SQL table
   $DBH->do("DROP TABLE IF EXISTS $SQL_MODULE_TABLE");
   $DBH->do("CREATE TABLE $SQL_MODULE_TABLE (id INTEGER PRIMARY KEY, name TEXT UNIQUE, repository TEXT, checkout_dir TEXT)");
@@ -115,6 +98,24 @@ sub parse_xorg_xml_and_insert {
       $checkoutdir = $module;
     }
     $sth_gs->execute( undef, $id, $module, $checkoutdir );
+  }
+}
+
+# Take XML data from X.Org and print meta modules
+sub parse_xorg_xml_and_print_meta_modules {
+  ## Parse the X.org XML modules file and insert into SQL table
+  my $parser = XML::Parser->new(ErrorContext => 2, Style => "Tree");
+  my $xmlobj = XML::SimpleObject->new( $parser->parsefile($XML_FILE) );
+
+  # foreach my $element ($xmlobj->child("moduleset")->children("metamodule")) { # WORKS
+  foreach my $element ($xmlobj->child("moduleset")->child("metamodule")->child("dependencies")->children("dep")) {
+#    my $id = $element->attribute('id');
+    print $element->attribute('package'), "\n";
+    # my $branch = $element->child('branch');
+    # my $repo = $branch->attribute('repo');
+    # my $module = $branch->attribute('module');
+    # my $checkoutdir = $branch->attribute('checkoutdir');
+#    print '$element->attribute(\'id\');', " $id <=\n";
   }
 }
 
