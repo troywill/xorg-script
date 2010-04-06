@@ -78,7 +78,7 @@ while (1) {
 
 # Take XML data from X.Org and place into an SQL database table
 sub parse_xorg_xml_and_insert {
-    $xml_file = shift;
+    my $xml_file = shift;
   ## Parse the X.org XML modules file and insert into SQL table
   my $parser = XML::Parser->new(ErrorContext => 2, Style => "Tree");
   my $xmlobj = XML::SimpleObject->new( $parser->parsefile($xml_file) );
@@ -197,7 +197,8 @@ sub generate_build_script {
   print "==>[$repo_dir], [$module], [$counter]<==\n";
   my $formated_counter = sprintf('%003d', $counter);
   my $stow_dir = "X.$formated_counter.$module.$SUFFIX";
-  $stow_dir = 'X.Dec.17';
+  # TDW 2010-04-06 Comment following line if you want to stow in a single X.org directory
+  # $stow_dir = 'X.10-04-06';
   my $script = <<END;
 #!/bin/bash
 set -o errexit
