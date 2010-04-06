@@ -19,7 +19,7 @@ use DBI;
 
 # +- Begin User Defined Variable Section -----------------+
 my $XML_FILE = 'data/xorg.modules/xorg.modules.091027';
-my $BUILD_LIST_FILE = 'data/build-list/build-list.091027';
+my $BUILD_LIST_FILE = 'data/build-list/build-list.100406';
 my $DATABASE = 'xorg.db';
 my $SQL_MODULE_TABLE = 'xorg_modules';
 my $GIT_BASE = "$ENV{'HOME'}/XORG-GIT";
