@@ -1,0 +1,5 @@
+  <metamodule id="xorg-protos">
+  <metamodule id="xorg-libs">
+  <metamodule id="xorg-apps">
+  <metamodule id="xorg-drivers">
+  <metamodule id="xorg">
