@@ -5,3 +5,5 @@ python [v2.6.5] Python Programming Language
 freetype
 expat (mesa?)
 intltool ( xkbcomp )
+glib
+XML::Parser
