@@ -1,0 +1,24 @@
+atomic_ops [v7.2alpha4] Multiplatform library with atomic operations
+libxml2 [v2.7.7] The XML C parser and toolkit of Gnome
+libxslt [v1.1.26] The XSLT C library for GNOME (provides xsltproc)
+python [v2.6.5] Python Programming Language
+freetype
+expat
+####################################################################
+cpio [v2.11] GNU Cpio
+DBD-SQLite [v1.30_02] CPAN module: DBD-SQLite, Self-contained RDBMS (SQLite) in a DBI Driver
+DBI [v1.611] DBI: the standard database interface module for Perl
+dhcpcd [v5.2.2] dhcpcd
+emacs-nox [v23.1] GNU Emacs without X support
+git [v1.7.0.4] free revision control
+openssh [v5.4p1] encrypted communication sessions
+openssl [v1.0.0] openssl
+python3 [v3.1.2] Python Programming Language
+qt-framework [v4.6.2] Qt application development framework
+qt-sdk [v4.6.2] Qt SDK: Complete Development Environment
+rsync [v3.0.7] rsync
+sqlite3 [v3.6.23.1] SQLite embedded SQL database engine
+sudo [v1.7.2p5] run some (or all) commands as root
+Text::CSV [v1.17] CPAN module: Text::CSV
+wget [v1.12] GNU Wget
+wireless_tools [v30-pre9] Wireless Tools for Linux

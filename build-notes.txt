@@ -1,0 +1,2 @@
+When building mesa only build the driver needed.
+For example, ./configure --prefix=/usr --with-dri-drivers=i965
