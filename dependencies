@@ -7,6 +7,7 @@ expat (mesa?)
 intltool ( xkbcomp )
 glib
 XML::Parser
+gperf
 
 
 Dependencies for Troy's install tool:
