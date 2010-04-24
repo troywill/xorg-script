@@ -17,3 +17,5 @@ XML::Parser
 XML::LibXML
 XML::SimpleObject
 DBI
+DBD::SQLite
+
