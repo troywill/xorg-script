@@ -7,3 +7,12 @@ expat (mesa?)
 intltool ( xkbcomp )
 glib
 XML::Parser
+
+
+Dependencies for Troy's install tool:
+ConfigReader::Simple
+XML::Simple
+XML::Parser
+XML::LibXML
+XML::SimpleObject
+DBI
