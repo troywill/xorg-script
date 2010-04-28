@@ -167,8 +167,8 @@ sub write_all_scripts {
   print LOGFILE <<'EOF';
 #!/bin/bash
 set -o errexit
-BUILD_DIR=**<EDIT_ME>**\n";
-# export CFLAGS='-march=native -Os';
+BUILD_DIR=**<EDIT_ME>**\n"; # Absolute path to this file
+export CFLAGS='-Os -march=native';
 EOF
       my @AoA = @_;
   my $counter = 0;
@@ -200,16 +200,19 @@ sub generate_build_script {
   print "==>[$repo_dir], [$module], [$counter]<==\n";
   my $formated_counter = sprintf('%003d', $counter);
   my $stow_dir = "X.$formated_counter.$module.$SUFFIX";
-  # TDW 2010-04-06 Comment following line if you want to stow in a single X.org directory
-  # $stow_dir = 'X.10-04-06';
+  # TDW 2010-04-06 Uncomment following line if you want to stow in a single X.org directory
+  $stow_dir = 'Xorg.100427';
   my $script = <<END;
 #!/bin/bash
 set -o errexit
 ./autogen.sh
-./configure --prefix=/usr
+./configure --prefix=/usr --sysconfdir=/etc --mandir=/usr/share/man --localstatedir=/var
 make
+echo "Continue?"
+read
 sudo make DESTDIR=/stow/$stow_dir install
 sudo stow -v $stow_dir;
+make clean
 END
   return $script;
 }

@@ -1,2 +1,2 @@
-When building mesa only build the driver needed.
-For example, ./configure --prefix=/usr --with-dri-drivers=i965
+When building mesa/mesa only build the driver needed.
+For example, ./configure --prefix=/usr --with-dri-drivers=i915 --enable-gallium-intel Asus Eee 4G Surf)
