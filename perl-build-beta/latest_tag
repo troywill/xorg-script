@@ -1,0 +1,53 @@
+#!/usr/bin/env perl
+use warnings;
+use strict;
+use ConfigReader::Simple;
+use DBI;
+
+my $YAML_FILE = "build_list.xorg_apps.yml";
+my $DATABASE = "xorg.db";
+my $SQL_MODULE_TABLE = "xorg_modules";
+
+my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCommit => 1});
+
+open( my $in, "<", $YAML_FILE) or die "Unable to open yml file: $!";
+while ( my $module = <$in> ) {
+    chomp $module;
+#    &get_module_info_from_database($module);
+}
+close $in or die;
+
+open( $in, "<", "buildlist.xserver.txt");
+while ( my $line = <$in> ) {
+    chomp $line;
+    my ( $module, $tarball ) = split ( '\|', $line );
+    my $statement = "SELECT id, repository FROM $SQL_MODULE_TABLE WHERE name = \"$module\"";
+    my ( $id, $repository ) = $DBH->selectrow_array($statement);
+    my $base_url = 'http://cgit.freedesktop.org';
+    my $tarball_url = "$base_url/$repository/snapshot/$tarball";
+    print "$id: $module, $tarball_url\n";
+    system("wget --no-clobber $tarball_url");
+}
+close $in;
+
+# &read_xorg_modules_table_and_print;
+sub get_module_info_from_database {
+    my $module = shift;
+    my $statement = "SELECT id, repository FROM $SQL_MODULE_TABLE WHERE name = \"$module\"";
+    my ( $id, $repository ) = $DBH->selectrow_array($statement);
+    my $git_url = &build_git_url ( $repository );
+    return ( $repository, $git_url );
+}
+
+sub build_git_url {
+    my $repository = shift;
+    return "<li><a href=\"http://cgit.freedesktop.org/$repository\">$repository</a></li>";
+}
+
+sub read_xorg_modules_table_and_print {
+    my $all = $DBH->selectall_arrayref("SELECT * FROM $SQL_MODULE_TABLE ORDER BY id");
+    foreach my $row (@$all) {
+	my ($id, $name, $repository, $checkout_dir ) = @$row;
+	print "$id\t$name\t$repository\t$checkout_dir\n";
+    }
+}
