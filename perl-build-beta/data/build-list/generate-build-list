@@ -1,10 +1,19 @@
 #!/bin/bash
 
 xorg_apps () {
-    jhbuild list xserver xf86-video-intel xf86-input-keyboard xkeyboard-config xf86-input-mouse xorg-apps > temp1
+    jhbuild list xserver xf86-video-intel xf86-input-keyboard xkeyboard-config xf86-input-mouse xorg-apps > build_list.xorg_apps
+    echo "Manually remove meta modules xorg-protos and xorg-apps, and xorg-fonts"
 }
 
+xorg_fonts () {
+    jhbuild list xserver xf86-video-intel xf86-input-keyboard xkeyboard-config xf86-input-mouse xorg-apps xorg-fonts > build_list.xorg_fonts
+    echo "Manually remove meta modules xorg-protos, xorg-apps, and xorg-fonts"
+}
 
-jhbuild list xserver xf86-video-intel xf86-input-keyboard xkeyboard-config xf86-input-mouse xorg-apps xorg-fonts > temp2
-# manually remove meta modules xorg-protos, xorg-apps, and xorg-fonts
+xorg_protos () {
+    jhbuild list xorg-protos > build_list.xorg_protos
+}
 
+xorg_apps
+xorg_fonts
+xorg_protos
