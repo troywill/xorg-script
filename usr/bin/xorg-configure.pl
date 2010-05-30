@@ -2,7 +2,6 @@
 use warnings;
 use strict;
 
-
 system("sudo X -configure &");
 sleep 3;
 system("sudo killall X");
