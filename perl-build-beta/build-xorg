@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use warnings;
 use strict;
 use ConfigReader::Simple;
@@ -155,6 +155,8 @@ sub generate_wget_list {
   foreach my $row ( @AoA ) {
     $counter++;
     my ( $module, $repository, $checkout_dir ) = @$row;
+    print "$module, $repository, $checkout_dir\n";
+    sleep 1;
     my $repo_dir = "$GIT_BASE/$checkout_dir";
     my $command = "grep $module /tmp/bz.txt";
     chomp( my $tarball = `$command`);
@@ -201,17 +203,17 @@ sub generate_build_script {
   my $formated_counter = sprintf('%003d', $counter);
   my $stow_dir = "X.$formated_counter.$module.$SUFFIX";
   # TDW 2010-04-06 Uncomment following line if you want to stow in a single X.org directory
-  $stow_dir = 'Xorg.100427';
+  # $stow_dir = 'Xorg.100427';
   my $script = <<END;
 #!/bin/bash
 set -o errexit
 ./autogen.sh
-./configure --prefix=/usr --sysconfdir=/etc --mandir=/usr/share/man --localstatedir=/var
+./configure --prefix=/usr/local --sysconfdir=/etc --mandir=/usr/local/share/man --localstatedir=/var
 make
-echo "Continue?"
+echo "Stow this package?"
 read
 sudo make DESTDIR=/stow/$stow_dir install
-sudo stow -v $stow_dir;
+sudo stow2 -v $stow_dir;
 make clean
 END
   return $script;
