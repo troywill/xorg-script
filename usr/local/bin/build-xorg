@@ -1,0 +1,286 @@
+#!/usr/bin/env perl
+use warnings;
+use strict;
+use ConfigReader::Simple;
+use XML::Parser;
+use XML::SimpleObject;
+use DBI;
+#### Written by Troy Will <troydwill@gmail.com> July 2009
+########## User Defined Variables
+my $config = ConfigReader::Simple->new( '../share/perl-build-beta/build-xorg.cfg' );
+# my $TAR_COMMAND = $config->get( 'TAR_COMMAND' );
+my $XML_FILE = $config->get('XML_FILE');
+my $BUILD_LIST_FILE = $config->get('BUILD_LIST_FILE');
+my $DATABASE = $config->get('DATABASE');
+my $SQL_MODULE_TABLE = $config->get('SQL_MODULE_TABLE');
+my $GIT_BASE = $ENV{'HOME'} . "/" . $config->get('GIT_BASE');
+my $SUFFIX = $config->get('SUFFIX');
+########## General Variables
+my $REPO = 'git://git.freedesktop.org/git';
+# This array is the list of X.Org modules to build in sequential order
+my @xorg_modules_in_build_order = &return_xorg_modules_in_build_order( $BUILD_LIST_FILE );
+my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCommit => 1});
+
+########## Main Program
+# Read SQL table data built with &parse_xorg_xml_and_insert
+my @array_of_array_references = &generate_array_from_sql;
+
+my @menu = (
+	    [ '1', 'Parse xorg.xml and insert',         \&parse_xorg_xml_and_insert, $XML_FILE ],
+	    # Print every module, not just ones for Asus Eee PC
+	    [ '2', 'Read xorg modules table and print', \&read_xorg_modules_table_and_print, '' ],
+	    [ '3', 'Git checkout',                      \&do_git_checkout, @array_of_array_references ],
+	    [ '4', 'Git pull',                          \&do_git_pull, @array_of_array_references ],
+            [ '5', 'Build X System',                    \&do_build, @array_of_array_references ],
+            [ '6', 'Write Build Scripts',               \&write_all_scripts, @array_of_array_references ],
+            [ '7', 'Generate wget list',               \&generate_wget_list, @array_of_array_references ],
+            [ '8', 'Parse xorg.xml and print metamodules', \&parse_xorg_xml_and_print_meta_modules, '' ] );
+
+while (1) {
+    foreach my $aref ( @menu ) {
+	#    my ( $key_to_press, $prompt, $code_ref = $aref->[2];
+	my ( $key_to_press, $prompt, $code_ref ) = @{$aref};
+	print "$key_to_press: $prompt\n";
+    }
+    chomp(my $input = <STDIN>);
+    foreach my $aref ( @menu ) {
+	#    my ( $key_to_press, $prompt, $code_ref = $aref->[2];
+	my ( $key_to_press, $prompt, $code_ref, @arguements ) = @{$aref};
+	# &$code_ref; # Run the subroutine
+	if ( $input eq $key_to_press ) {
+	    &$code_ref(@arguements);	# Run the subroutine
+	}
+    }
+}
+
+########## Subroutines
+# Take XML data from X.Org and place into an SQL database table
+sub parse_xorg_xml_and_insert {
+    my $xml_file = shift;
+  ## Parse the X.org XML modules file and insert into SQL table
+  my $parser = XML::Parser->new(ErrorContext => 2, Style => "Tree");
+  my $xmlobj = XML::SimpleObject->new( $parser->parsefile($xml_file) );
+  # Create the SQL table
+  $DBH->do("DROP TABLE IF EXISTS $SQL_MODULE_TABLE");
+  $DBH->do("CREATE TABLE $SQL_MODULE_TABLE (id INTEGER PRIMARY KEY, name TEXT UNIQUE, repository TEXT, checkout_dir TEXT)");
+
+  my $sth_gs = $DBH->prepare("INSERT INTO $SQL_MODULE_TABLE VALUES (?, ?, ?, ?)");
+
+  foreach my $element ($xmlobj->child("moduleset")->children("autotools")) {
+    my $id = $element->attribute('id');
+    my $branch = $element->child('branch');
+    my $repo = $branch->attribute('repo');
+    my $module = $branch->attribute('module');
+    my $checkoutdir = $branch->attribute('checkoutdir');
+    if ( !defined($checkoutdir) ) {
+      $checkoutdir = $module;
+    }
+    $sth_gs->execute( undef, $id, $module, $checkoutdir );
+  }
+}
+
+# Take XML data from X.Org and print meta modules
+sub parse_xorg_xml_and_print_meta_modules {
+  ## Parse the X.org XML modules file and insert into SQL table
+  my $parser = XML::Parser->new(ErrorContext => 2, Style => "Tree");
+  my $xmlobj = XML::SimpleObject->new( $parser->parsefile($XML_FILE) );
+
+  # foreach my $element ($xmlobj->child("moduleset")->children("metamodule")) { # WORKS
+  foreach my $element ($xmlobj->child("moduleset")->child("metamodule")->child("dependencies")->children("dep")) {
+#    my $id = $element->attribute('id');
+    print $element->attribute('package'), "\n";
+    # my $branch = $element->child('branch');
+    # my $repo = $branch->attribute('repo');
+    # my $module = $branch->attribute('module');
+    # my $checkoutdir = $branch->attribute('checkoutdir');
+#    print '$element->attribute(\'id\');', " $id <=\n";
+  }
+}
+
+sub generate_script_name {
+  my $module = shift;
+  return "stow-$module.sh";
+}
+
+sub do_build {
+  my @AoA = @_;
+  my $counter = 0;
+  my $suffix = 'tmpl';
+  foreach my $row ( @AoA ) {
+    $counter++;
+    my ( $module, $repository, $checkout_dir ) = @$row;
+    my $repo_dir = "$GIT_BASE/$checkout_dir";
+    my $filename = &generate_script_name( $module );
+    my $template_name = $filename.= '.tmpl';
+    write_build_script ( $repo_dir, $module, $repository, $counter, $template_name );
+    print "$counter: $module, build (y/n) [y]? ";
+    chomp (my $answer = <STDIN>);
+    if ( $answer eq 'y' || $answer eq '') {
+      &run_script ( $repo_dir, $module );
+    } else {
+      print "Skipping $module\n";
+    }
+  }
+}
+
+sub generate_wget_list {
+  my @AoA = @_;
+  my $counter = 0;
+  my $suffix = 'tmpl';
+  foreach my $row ( @AoA ) {
+    $counter++;
+    my ( $module, $repository, $checkout_dir ) = @$row;
+    print "$module, $repository, $checkout_dir\n";
+    sleep 1;
+    my $repo_dir = "$GIT_BASE/$checkout_dir";
+    my $command = "grep $module /tmp/bz.txt";
+    chomp( my $tarball = `$command`);
+    print "$module => $tarball\n";
+  }
+}
+
+sub write_all_scripts {
+  open ( LOGFILE, ">$GIT_BASE/xorg-build-all-with-stow.sh");
+  print LOGFILE <<'EOF';
+#!/bin/bash
+set -o errexit
+BUILD_DIR=**<EDIT_ME>**\n"; # Absolute path to this file
+export CFLAGS='-Os -march=native';
+EOF
+      my @AoA = @_;
+  my $counter = 0;
+  my $suffix = 'tmpl';
+  foreach my $row ( @AoA ) {
+    $counter++;
+    my ( $module, $repository, $checkout_dir ) = @$row;
+    my $repo_dir = "$GIT_BASE/$checkout_dir";
+    my $filename = &generate_script_name( $module );
+    print "Writing $repo_dir/$filename\n";
+    write_build_script ( $repo_dir, $module, $repository, $counter, $filename );
+#    print LOGFILE "$repo_dir, $module, $repository, $counter, $filename\n";
+    print LOGFILE "cd \${BUILD_DIR}/$checkout_dir && sh ./$filename\n";
+  }
+    close ( LOGFILE );
+}
+
+sub write_build_script {
+  my ( $repo_dir, $module, $repository, $counter, $filename ) = @_;
+  my $script = &generate_build_script ( $repo_dir, $module, $counter );
+  chdir $repo_dir || die "Unable to chdir $repo_dir";
+  open ( OUT, ">$filename");
+  print OUT $script;
+  close OUT;
+}
+
+sub generate_build_script {
+  my ( $repo_dir, $module, $counter ) = @_;
+  print "==>[$repo_dir], [$module], [$counter]<==\n";
+  my $formated_counter = sprintf('%003d', $counter);
+  my $stow_dir = "X.$formated_counter.$module.$SUFFIX";
+  # TDW 2010-04-06 Uncomment following line if you want to stow in a single X.org directory
+  # $stow_dir = 'Xorg.100427';
+  my $script = <<END;
+#!/bin/bash
+set -o errexit
+./autogen.sh
+./configure --prefix=/usr/local --sysconfdir=/etc --mandir=/usr/local/share/man --localstatedir=/var
+make
+echo "Stow this package?"
+read
+sudo make DESTDIR=/stow/$stow_dir install
+sudo stow2 -v $stow_dir;
+make clean
+END
+  return $script;
+}
+
+sub run_script {
+  my ( $repo_dir, $module ) = @_;
+  chdir $repo_dir || die "Unable to chdir $repo_dir";
+  system("sh ./stow-$module.sh");
+}
+
+sub do_git_checkout {
+    open( LOG, ">/tmp/git_checkout.sh");
+    # Call this function with the array of repository data as an argument
+  # Do a git pull on each module in the array
+    system("mkdir -p $GIT_BASE");
+    my @AoA = @_;
+    foreach my $row ( @AoA ) {
+	my ($module, $repository, $checkout_dir ) = @$row;
+	$checkout_dir = $repository if ( !defined($checkout_dir) || $checkout_dir eq '' );
+	my $command = "cd $GIT_BASE && git clone $REPO/$repository $checkout_dir";
+	print $command, "\n";
+	print LOG $command, "\n";
+	system $command;
+    }
+    close LOG;
+}
+
+sub read_xorg_modules_table_and_print {
+  my $all = $DBH->selectall_arrayref("SELECT * FROM $SQL_MODULE_TABLE ORDER BY id");
+  foreach my $row (@$all) {
+    my ($id, $name, $repository, $checkout_dir ) = @$row;
+    print "$id\t$name\t$repository\t$checkout_dir\n";
+  }
+}
+
+sub generate_array_from_sql {
+  # Introduction ----------------------------------------------------#
+  # We have have taken XML data and placed it into an SQL table
+  # We want to pull out the data from the SQL table in the package build order.
+  # 
+  #------------------------------------------------------------------#
+  my @array_of_array_references;
+  my $sth2 = $DBH->prepare("SELECT repository, checkout_dir FROM $SQL_MODULE_TABLE where name = ?");
+  foreach my $module ( @xorg_modules_in_build_order ) {
+    $sth2->execute( $module );
+    my ( $repository, $checkout_dir ) = $sth2->fetchrow();
+    $checkout_dir = '' if !defined $checkout_dir;
+    push (@array_of_array_references, [ $module, $repository, $checkout_dir ]);
+  }
+  return @array_of_array_references;
+}
+
+sub do_git_pull {
+  my @AoA = @_;
+  system("mkdir --parent $GIT_BASE"); # Does Perl have a mkdir --parent equivalent?
+  foreach my $row ( @AoA ) {
+    my ( $module, $repository, $checkout_dir ) = @$row;
+    print "$repository : ";
+    my $repo_dir = "$GIT_BASE/$checkout_dir";
+    my $command = "cd $repo_dir && git pull";
+    system $command;
+  }
+}
+
+sub return_xorg_modules_in_build_order {
+    my $BUILD_LIST_FILE = shift;
+    # Read from file and return
+    my @xorg_modules_in_build_order;
+    open( IN, $BUILD_LIST_FILE ) || die "Unable to open $BUILD_LIST_FILE";
+    while ( my $line = <IN>) {
+	unless ( $line =~ /^#/ ) {
+	    chomp $line;
+	    push @xorg_modules_in_build_order, $line;
+	}
+    }
+    close IN;
+    return @xorg_modules_in_build_order;
+    exit;
+}
+
+sub sound_prompt {
+    print "\a";
+}
+
+# +- Begin Reference Section -----------------------------+
+# http://www.xml.com/pub/a/2001/04/18/perlxmlqstart1.html |
+# Location of tarballs:
+# http://www.nathancoulson.com/proj_eee.shtml ( Has kernel config info )
+# http://www.nathancoulson.com/proj/eee/config-2.6.25.4-2 ( kernel config info )
+# http://perpetual-notion.blogspot.com/2008/07/gentoo-eee-pc-black-screen-on-resume.html
+# http://www.easysoft.com/developer/languages/perl/dbd_odbc_tutorial_part_2.html
+# http://dri.sourceforge.net/doc/DRIuserguide.html
+# http://perl.jonallen.info
+# +- End Reference Section -------------------------------+
