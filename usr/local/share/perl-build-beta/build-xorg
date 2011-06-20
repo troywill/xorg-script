@@ -6,19 +6,7 @@ use XML::Parser;
 use XML::SimpleObject;
 use DBI;
 #### Written by Troy Will <troydwill@gmail.com> July 2009
-
-# +- Begin Reference Section -----------------------------+
-# http://www.xml.com/pub/a/2001/04/18/perlxmlqstart1.html |
-# Location of tarballs:
-# http://www.nathancoulson.com/proj_eee.shtml ( Has kernel config info )
-# http://www.nathancoulson.com/proj/eee/config-2.6.25.4-2 ( kernel config info )
-# http://perpetual-notion.blogspot.com/2008/07/gentoo-eee-pc-black-screen-on-resume.html
-# http://www.easysoft.com/developer/languages/perl/dbd_odbc_tutorial_part_2.html
-# http://dri.sourceforge.net/doc/DRIuserguide.html
-# http://perl.jonallen.info
-# +- End Reference Section -------------------------------+
-
-# +- Begin User Defined Variable Section -----------------+
+########## Begin User Defined Variable Section #############
 my $config = ConfigReader::Simple->new( 'build-xorg.cfg' );
 # my $TAR_COMMAND = $config->get( 'TAR_COMMAND' );
 my $XML_FILE = $config->get('XML_FILE');
@@ -27,20 +15,17 @@ my $DATABASE = $config->get('DATABASE');
 my $SQL_MODULE_TABLE = $config->get('SQL_MODULE_TABLE');
 my $GIT_BASE = $ENV{'HOME'} . "/" . $config->get('GIT_BASE');
 my $SUFFIX = $config->get('SUFFIX');
-# +- End User Defined Variable Section -------------------+
+########## End User Defined Variable Section ###############
 
-# +- Begin General Variable Section ----------------------+
+########## General Variables
 my $REPO = 'git://git.freedesktop.org/git';
 # This array is the list of X.Org modules to build in sequential order
 my @xorg_modules_in_build_order = &return_xorg_modules_in_build_order( $BUILD_LIST_FILE );
-
 my $DBH = DBI->connect("dbi:SQLite:$DATABASE", "", "", {RaiseError => 1, AutoCommit => 1});
-# +- End General Variable Section ------------------------+
 
-# + Main Program -----------------------------------------+
-# my @array_of_array_references;
-my @array_of_array_references = &generate_array_from_sql; # Read SQL table data built with &parse_xorg_xml_and_insert
-
+########## Main Program
+# Read SQL table data built with &parse_xorg_xml_and_insert
+my @array_of_array_references = &generate_array_from_sql;
 
 my @menu = (
 	    [ '1', 'Parse xorg.xml and insert',         \&parse_xorg_xml_and_insert, $XML_FILE ],
@@ -52,13 +37,6 @@ my @menu = (
             [ '6', 'Write Build Scripts',               \&write_all_scripts, @array_of_array_references ],
             [ '7', 'Generate wget list',               \&generate_wget_list, @array_of_array_references ],
             [ '8', 'Parse xorg.xml and print metamodules', \&parse_xorg_xml_and_print_meta_modules, '' ] );
-
-
-# http://www.x.org/releases/X11R7.5/src/everything/applewmproto-1.4.1.tar.bz2
-
-
-# &print_build_order(@array_of_array_references);
-# &do_build(@array_of_array_references);
 
 while (1) {
     foreach my $aref ( @menu ) {
@@ -77,8 +55,7 @@ while (1) {
     }
 }
 
-#### Place only subroutines below this line ( Troy Will, TDW ) ###
-
+########## Subroutines
 # Take XML data from X.Org and place into an SQL database table
 sub parse_xorg_xml_and_insert {
     my $xml_file = shift;
@@ -298,3 +275,14 @@ sub return_xorg_modules_in_build_order {
 sub sound_prompt {
     print "\a";
 }
+
+# +- Begin Reference Section -----------------------------+
+# http://www.xml.com/pub/a/2001/04/18/perlxmlqstart1.html |
+# Location of tarballs:
+# http://www.nathancoulson.com/proj_eee.shtml ( Has kernel config info )
+# http://www.nathancoulson.com/proj/eee/config-2.6.25.4-2 ( kernel config info )
+# http://perpetual-notion.blogspot.com/2008/07/gentoo-eee-pc-black-screen-on-resume.html
+# http://www.easysoft.com/developer/languages/perl/dbd_odbc_tutorial_part_2.html
+# http://dri.sourceforge.net/doc/DRIuserguide.html
+# http://perl.jonallen.info
+# +- End Reference Section -------------------------------+
