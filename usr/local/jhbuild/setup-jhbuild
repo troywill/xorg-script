@@ -7,6 +7,27 @@ while (1) {
     &menu;
 }
 
+sub install_jhbuild {
+    my $SETUP_PATH_COMMAND = "echo 'export PATH=\$PATH:$HOME_DIR/.local/bin' >> $HOME_DIR/.bashrc";
+    chdir $HOME_DIR;
+    system $CLONE_JHBUILD_COMMAND;
+    chdir "$HOME_DIR/jhbuild";
+    print "$HOME_DIR/jhbuild ==>";
+    system ("pwd");
+    system( 'make -f Makefile.plain');
+    system( 'make -f Makefile.plain install');
+    system $SETUP_PATH_COMMAND;
+    print "Please source $HOME_DIR/.bashrc\n";
+}
+
+sub install_xorg_util_modular {
+    my $BASE_DIR = "$HOME_DIR/xorg/util";
+    my $CLONE_XORG_MODULAR_COMMAND = "mkdir -p $HOME_DIR/xorg/util && git clone git://anongit.freedesktop.org/xorg/util/modular $HOME_DIR/xorg/util/modular";
+    system $CLONE_XORG_MODULAR_COMMAND;
+    use File::Copy;
+    copy( "$BASE_DIR/modular/jhbuildrc", "$HOME_DIR/.jhbuildrc" ) or die "Copy failed: $!";
+}
+
 sub print_reference_commands {
     print 'jhbuild list xserver xf86-video-intel xf86-input-keyboard xkeyboard-config xorg-apps', "\n";
 }
@@ -28,26 +49,4 @@ sub menu {
     } else {
 	exit;
     }
-}
-
-sub install_jhbuild {
-    my $SETUP_PATH_COMMAND = "echo 'export PATH=\$PATH:$HOME_DIR/.local/bin' >> $HOME_DIR/.bashrc";
-
-    chdir $HOME_DIR;
-    system $CLONE_JHBUILD_COMMAND;
-    chdir "$HOME_DIR/jhbuild";
-    print "$HOME_DIR/jhbuild ==>";
-    system ("pwd");
-    system( 'make -f Makefile.plain');
-    system( 'make -f Makefile.plain install');
-    system $SETUP_PATH_COMMAND;
-    print "Please source $HOME_DIR/.bashrc\n";
-}
-
-sub install_xorg_util_modular {
-    my $BASE_DIR = "$HOME_DIR/xorg/util";
-    my $CLONE_XORG_MODULAR_COMMAND = "mkdir -p $HOME_DIR/xorg/util && git clone git://anongit.freedesktop.org/xorg/util/modular $HOME_DIR/xorg/util/modular";
-    system $CLONE_XORG_MODULAR_COMMAND;
-    use File::Copy;
-    copy( "$BASE_DIR/modular/jhbuildrc", "$HOME_DIR/.jhbuildrc" ) or die "Copy failed: $!";
 }
