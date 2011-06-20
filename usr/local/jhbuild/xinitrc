@@ -1,6 +1,0 @@
-#qtdemo
-#xeyes &
-#xclock -g 100x100-50+50
-glxdemo &
-# glxgears &
-twm
